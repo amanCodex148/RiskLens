@@ -52,6 +52,22 @@ jobs:
       - name: Verify Container Liveness & Health Probe
         run: |
           docker run -d --name risklens-ci -p 8000:8000 risklens:ci
-          curl --retry 10 --retry-delay 2 --retry-connrefused -f http://127.0.0.1:8000/api/health || (docker logs risklens-ci && exit 1)
+          echo "Waiting for RiskLens container to boot and pass health probe..."
+          SUCCESS=0
+          for i in {1..30}; do
+            if curl -s -f http://127.0.0.1:8000/api/health; then
+              echo ""
+              echo ">>> Container is healthy and responding!"
+              SUCCESS=1
+              break
+            fi
+            echo "Waiting for container startup... ($i/30)"
+            sleep 2
+          done
+          docker logs risklens-ci
+          if [ $SUCCESS -ne 1 ]; then
+            echo "Container health check timed out after 60 seconds."
+            exit 1
+          fi
           docker stop risklens-ci
           docker rm risklens-ci
