@@ -1,0 +1,1574 @@
+/* RiskLens - True Dark / AMOLED Black Theme */
+:root {
+    --bg-amoled: #000000;
+    --card-amoled: #09090b;
+    --card-surface: #111114;
+    --card-surface-elevated: #18181b;
+    --border-amoled: #222225;
+    --border-amoled-subtle: #18181b;
+    --border-amoled-hover: #3f3f46;
+    --accent-indigo: #6366f1;
+    --accent-cyan: #06b6d4;
+    --accent-emerald: #10b981;
+    --accent-amber: #f59e0b;
+    --accent-rose: #f43f5e;
+}
+
+/* Global Reset & Strict Viewport Containment (Prevents horizontal scroll on all screens) */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+html {
+    max-width: 100vw;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+}
+
+/* Base Body - Pure AMOLED Black */
+body {
+    background-color: var(--bg-amoled) !important;
+    color: #f4f4f5;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.25s ease, color 0.25s ease;
+    max-width: 100vw;
+    overflow-x: hidden;
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
+/* Media Containment */
+img, svg, video, canvas {
+    max-width: 100%;
+    height: auto;
+}
+
+canvas {
+    display: block;
+}
+
+/* Text and code block containment */
+pre, code {
+    max-width: 100%;
+    word-break: break-word;
+}
+
+/* Glass & Card Panels - Ultra-deep dark surface with crisp border */
+.glass-panel {
+    background: var(--card-amoled) !important;
+    border: 1px solid var(--border-amoled) !important;
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.95);
+    transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.glass-panel:hover {
+    border-color: var(--border-amoled-hover) !important;
+}
+
+/* Elevated Sub-surfaces */
+.amoled-subpanel {
+    background: var(--card-surface) !important;
+    border: 1px solid var(--border-amoled) !important;
+}
+
+.amoled-input {
+    background: #050505 !important;
+    border: 1px solid var(--border-amoled) !important;
+    color: #ffffff !important;
+}
+
+.amoled-input:focus {
+    border-color: var(--accent-indigo) !important;
+    outline: none !important;
+}
+
+/* Badges with deep contrast on pure black */
+.badge-crown {
+    background: rgba(245, 158, 11, 0.1) !important;
+    border: 1px solid rgba(245, 158, 11, 0.45) !important;
+    color: #fbbf24 !important;
+}
+
+.badge-high {
+    background: rgba(244, 63, 94, 0.1) !important;
+    border: 1px solid rgba(244, 63, 94, 0.45) !important;
+    color: #fda4af !important;
+}
+
+.badge-optimal {
+    background: rgba(16, 185, 129, 0.1) !important;
+    border: 1px solid rgba(16, 185, 129, 0.45) !important;
+    color: #6ee7b7 !important;
+}
+
+/* Pure Black Scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #000000;
+}
+::-webkit-scrollbar-thumb {
+    background: #27272a;
+    border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #3f3f46;
+}
+
+/* Pulsing radar dot */
+@keyframes pulse-ring {
+    0% { transform: scale(0.95); opacity: 0.9; }
+    50% { transform: scale(1.15); opacity: 0.4; }
+    100% { transform: scale(0.95); opacity: 0.9; }
+}
+
+.pulse-indicator {
+    animation: pulse-ring 2.5s infinite ease-in-out;
+}
+
+/* Navigation Tabs */
+#nav-tabs-container {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+#nav-tabs-container::-webkit-scrollbar {
+    display: none;
+}
+
+.tab-btn {
+    color: #a1a1aa;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tab-btn:hover {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.tab-btn.active {
+    background-color: #18181b !important;
+    color: #ffffff !important;
+    border: 1px solid var(--border-amoled-hover) !important;
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.15);
+}
+
+/* Modal Tab Navigation */
+.modal-tab-pill {
+    color: #a1a1aa;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.modal-tab-pill:hover {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.modal-tab-pill.active {
+    background-color: #18181b !important;
+    color: #ffffff !important;
+    border: 1px solid var(--border-amoled-hover) !important;
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.20);
+}
+
+body.light-theme .modal-tab-pill {
+    color: #64748b !important;
+}
+
+body.light-theme .modal-tab-pill:hover {
+    color: #0f172a !important;
+    background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light-theme .modal-tab-pill.active {
+    background-color: #ffffff !important;
+    color: #4f46e5 !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Sliders */
+input[type=range] {
+    accent-color: var(--accent-indigo);
+}
+input[type=range]::-webkit-slider-runnable-track {
+    background: #18181b;
+    border: 1px solid #27272a;
+    border-radius: 0.5rem;
+}
+
+/* Chat bubble styling */
+.chat-bot-bubble {
+    background: #111114 !important;
+    border: 1px solid #222225 !important;
+}
+
+.chat-user-bubble {
+    background: #4f46e5 !important;
+    color: #ffffff !important;
+}
+
+/* Auth Page Container */
+#auth-container {
+    min-height: calc(100vh - 4.5rem);
+}
+
+.auth-card {
+    background: var(--card-amoled);
+    border: 1px solid var(--border-amoled);
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.9);
+}
+
+body.light-theme .auth-card {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08) !important;
+}
+
+
+/* ========================================================= */
+/* Clean Executive Light Theme Mode                          */
+/* ========================================================= */
+body.light-theme {
+    background-color: #f8fafc !important;
+    color: #0f172a !important;
+}
+
+body.light-theme header {
+    background-color: rgba(255, 255, 255, 0.96) !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+body.light-theme .glass-panel {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.06) !important;
+}
+
+body.light-theme .glass-panel:hover {
+    border-color: #cbd5e1 !important;
+}
+
+body.light-theme .text-white {
+    color: #0f172a !important;
+}
+
+/* Maintain high-contrast white text on colored CTA buttons, pills, and chat bubbles in light mode */
+body.light-theme button.bg-indigo-600,
+body.light-theme button.bg-indigo-600 *,
+body.light-theme button.bg-purple-600,
+body.light-theme button.bg-purple-600 *,
+body.light-theme button.bg-emerald-600,
+body.light-theme button.bg-emerald-600 *,
+body.light-theme button.bg-rose-600,
+body.light-theme button.bg-rose-600 *,
+body.light-theme .chat-user-bubble,
+body.light-theme .chat-user-bubble *,
+body.light-theme .currency-btn-active,
+body.light-theme .currency-btn-active *,
+body.light-theme .bg-indigo-600,
+body.light-theme .bg-indigo-600 *,
+body.light-theme .bg-purple-600,
+body.light-theme .bg-purple-600 * {
+    color: #ffffff !important;
+}
+
+body.light-theme .text-zinc-100 {
+    color: #0f172a !important;
+}
+
+body.light-theme .text-zinc-200 {
+    color: #1e293b !important;
+}
+
+body.light-theme .text-zinc-300 {
+    color: #334155 !important;
+}
+
+body.light-theme .text-zinc-400 {
+    color: #64748b !important;
+}
+
+body.light-theme .text-zinc-500 {
+    color: #94a3b8 !important;
+}
+
+/* Surface backgrounds */
+body.light-theme .bg-\[\#0e0e11\],
+body.light-theme .bg-\[\#08080a\],
+body.light-theme .bg-\[\#0d0d10\],
+body.light-theme .bg-\[\#0b0b0e\],
+body.light-theme .bg-\[\#0c0c0f\],
+body.light-theme .bg-\[\#111114\] {
+    background-color: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+}
+
+body.light-theme .bg-\[\#070709\],
+body.light-theme .bg-\[\#050507\] {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+}
+
+body.light-theme .bg-\[\#08170e\]\/50,
+body.light-theme .bg-\[\#06150e\] {
+    background-color: #ecfdf5 !important;
+    border-color: #a7f3d0 !important;
+}
+
+body.light-theme .bg-\[\#16070a\] {
+    background-color: #fff1f2 !important;
+    border-color: #fecdd3 !important;
+}
+
+body.light-theme .bg-\[\#0e0e22\],
+body.light-theme .bg-\[\#0f0e21\],
+body.light-theme .bg-\[\#130f24\],
+body.light-theme .bg-\[\#10141e\],
+body.light-theme .bg-\[\#131722\] {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+}
+
+body.light-theme .bg-\[\#09090c\],
+body.light-theme .bg-\[\#09090b\],
+body.light-theme .bg-\[\#0c1017\],
+body.light-theme .bg-\[\#0c0c12\],
+body.light-theme .bg-\[\#141418\],
+body.light-theme .bg-\[\#18181e\],
+body.light-theme .bg-\[\#18181b\],
+body.light-theme .bg-\[\#131316\] {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+}
+
+body.light-theme #data-exchange-modal,
+body.light-theme #copilot-modal,
+body.light-theme #auth-modal {
+    background-color: rgba(15, 23, 42, 0.6) !important;
+}
+
+body.light-theme .border-\[\#1c1c1f\],
+body.light-theme .border-\[\#1f1f22\],
+body.light-theme .border-\[\#222225\],
+body.light-theme .border-\[\#141416\],
+body.light-theme .border-\[\#18181b\],
+body.light-theme .border-\[\#1e1e22\] {
+    border-color: #e2e8f0 !important;
+}
+
+body.light-theme thead {
+    background-color: #f1f5f9 !important;
+    color: #475569 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.light-theme tbody tr {
+    border-color: #f1f5f9 !important;
+}
+
+body.light-theme tbody tr:hover {
+    background-color: #f8fafc !important;
+}
+
+body.light-theme .tab-btn {
+    color: #64748b !important;
+}
+
+body.light-theme .tab-btn:hover {
+    color: #0f172a !important;
+    background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light-theme .tab-btn.active {
+    background-color: #ffffff !important;
+    color: #4f46e5 !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+
+body.light-theme input#asset-search-input,
+body.light-theme input#copilot-input {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+}
+
+body.light-theme input#asset-search-input::placeholder,
+body.light-theme input#copilot-input::placeholder {
+    color: #94a3b8 !important;
+}
+
+body.light-theme input[type=range]::-webkit-slider-runnable-track {
+    background: #e2e8f0 !important;
+    border-color: #cbd5e1 !important;
+}
+
+body.light-theme .chat-bot-bubble {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #1e293b !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+body.light-theme .badge-crown {
+    background: #fffbeb !important;
+    border-color: #fcd34d !important;
+    color: #b45309 !important;
+}
+
+body.light-theme .badge-high {
+    background: #fff1f2 !important;
+    border-color: #fecdd3 !important;
+    color: #be123c !important;
+}
+
+body.light-theme .badge-optimal {
+    background: #ecfdf5 !important;
+    border-color: #a7f3d0 !important;
+    color: #047857 !important;
+}
+
+body.light-theme .bg-\[\#0a0818\] {
+    background-color: #f5f3ff !important;
+    border-color: #ddd6fe !important;
+}
+
+body.light-theme .bg-\[\#06150e\] {
+    background-color: #ecfdf5 !important;
+    border-color: #a7f3d0 !important;
+}
+
+body.light-theme .bg-\[\#16070a\] {
+    background-color: #fff1f2 !important;
+    border-color: #fecdd3 !important;
+}
+
+body.light-theme code {
+    background-color: #f1f5f9 !important;
+    color: #b45309 !important;
+    border-color: #e2e8f0 !important;
+}
+
+body.light-theme ::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+body.light-theme ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+}
+body.light-theme ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* ================= REAL LOGIN PAGE UI STYLES ================= */
+.login-portal-header {
+    background: rgba(0, 0, 0, 0.85);
+    border-bottom: 1px solid var(--border-amoled);
+    backdrop-filter: blur(16px);
+}
+
+.login-hero-card {
+    background: linear-gradient(135deg, rgba(17, 17, 20, 0.75) 0%, rgba(9, 9, 11, 0.95) 100%);
+    border: 1px solid var(--border-amoled);
+    backdrop-filter: blur(12px);
+    transition: all 0.25s ease;
+}
+
+.login-hero-card:hover {
+    border-color: rgba(99, 102, 241, 0.45);
+    box-shadow: 0 8px 24px -4px rgba(99, 102, 241, 0.15);
+    transform: translateY(-1px);
+}
+
+.auth-card {
+    background: #09090b;
+    border: 1px solid var(--border-amoled);
+    box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.95);
+    transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+/* Segmented Auth Navigation Pills */
+.auth-segmented-nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    padding: 4px;
+    background: #09090b;
+    border: 1px solid var(--border-amoled);
+    border-radius: 14px;
+}
+
+.auth-nav-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    cursor: pointer;
+    user-select: none;
+    color: #a1a1aa;
+    line-height: 1;
+}
+
+.auth-nav-pill:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.auth-nav-pill.active {
+    background: #18181b;
+    color: #ffffff;
+    font-weight: 600;
+    border-color: #2e2e33;
+    box-shadow: 0 2px 6px -1px rgba(0, 0, 0, 0.6);
+}
+
+.auth-nav-pill i,
+.auth-nav-pill svg {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.login-persona-btn {
+    background: #0d0d10;
+    border: 1px solid var(--border-amoled);
+    transition: all 0.2s ease;
+}
+
+.login-persona-btn:hover {
+    background: #18181c;
+    border-color: rgba(99, 102, 241, 0.5);
+    transform: translateY(-1px);
+}
+
+/* Light Theme Overrides for Real Login Page */
+body.light-theme .login-portal-header {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border-color: #e2e8f0 !important;
+}
+
+body.light-theme .auth-card {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.08) !important;
+}
+
+body.light-theme .auth-segmented-nav {
+    background: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+}
+
+body.light-theme .auth-nav-pill {
+    color: #64748b !important;
+}
+
+body.light-theme .auth-nav-pill:hover {
+    color: #0f172a !important;
+    background: rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light-theme .auth-nav-pill.active {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+
+body.light-theme .login-hero-card {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04) !important;
+}
+
+body.light-theme .login-hero-card:hover {
+    border-color: #818cf8 !important;
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.1) !important;
+}
+
+body.light-theme .login-persona-btn {
+    background: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+    color: #1e293b !important;
+}
+
+body.light-theme .login-persona-btn:hover {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+}
+
+body.light-theme .bg-\[\#0d0d10\],
+body.light-theme .bg-\[\#08080a\],
+body.light-theme .bg-\[\#0a0a0d\] {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+body.light-theme .bg-\[\#18181b\] {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+
+body.light-theme .text-zinc-300,
+body.light-theme .text-zinc-400 {
+    color: #475569 !important;
+}
+
+body.light-theme .border-\[\#1c1c1f\],
+body.light-theme .border-\[\#222225\],
+body.light-theme .border-\[\#27272a\] {
+    border-color: #e2e8f0 !important;
+}
+
+/* Select Options for AMOLED & Light Theme */
+#global-industry-dataset-select option,
+#asset-tab-dataset-select option,
+#signup-role option {
+    background: #0e0e11;
+    color: #ffffff;
+}
+
+body.light-theme #global-industry-dataset-select,
+body.light-theme #asset-tab-dataset-select,
+body.light-theme #signup-role {
+    color: #0f172a !important;
+}
+
+body.light-theme #global-industry-dataset-select option,
+body.light-theme #asset-tab-dataset-select option,
+body.light-theme #signup-role option {
+    background: #ffffff !important;
+    color: #0f172a !important;
+}
+
+body.light-theme #kpi-eal-currency-icon {
+    background-color: rgba(245, 158, 11, 0.15) !important;
+    border-color: rgba(245, 158, 11, 0.4) !important;
+    color: #d97706 !important;
+}
+
+/* ========================================================= */
+/* Integrated AI (RiskLens AI) - Light Theme Perfection      */
+/* ========================================================= */
+
+/* 1. Header Button in Light Theme */
+body.light-theme #header-copilot-btn {
+    background-image: none !important;
+    background: #f5f3ff !important;
+    background-color: #f5f3ff !important;
+    border-color: #c4b5fd !important;
+    color: #5b21b6 !important;
+    box-shadow: 0 1px 3px rgba(124, 58, 237, 0.12) !important;
+}
+
+body.light-theme #header-copilot-btn:hover {
+    background-image: none !important;
+    background: #ede9fe !important;
+    background-color: #ede9fe !important;
+    border-color: #a78bfa !important;
+    color: #4c1d95 !important;
+}
+
+body.light-theme #header-copilot-btn span {
+    color: #5b21b6 !important;
+}
+
+body.light-theme #header-copilot-btn:hover span {
+    color: #4c1d95 !important;
+}
+
+body.light-theme #header-copilot-btn .bg-purple-500\/20 {
+    background-color: #ede9fe !important;
+    border-color: #c4b5fd !important;
+}
+
+body.light-theme #header-copilot-btn i {
+    color: #6d28d9 !important;
+}
+
+/* 2. Navigation Tab Pill in Light Theme */
+body.light-theme .tab-btn[data-tab="ai"] {
+    background-image: none !important;
+    background: #f5f3ff !important;
+    background-color: #f5f3ff !important;
+    border-color: #c4b5fd !important;
+    color: #5b21b6 !important;
+    box-shadow: 0 1px 3px rgba(124, 58, 237, 0.1) !important;
+}
+
+body.light-theme .tab-btn[data-tab="ai"]:hover {
+    background-image: none !important;
+    background: #ede9fe !important;
+    background-color: #ede9fe !important;
+    border-color: #a78bfa !important;
+    color: #4c1d95 !important;
+}
+
+body.light-theme .tab-btn[data-tab="ai"] span {
+    color: #5b21b6 !important;
+}
+
+body.light-theme .tab-btn[data-tab="ai"] i {
+    color: #6d28d9 !important;
+}
+
+/* 3. Floating Quick-Access Trigger Button in Light Theme */
+body.light-theme #floating-ai-copilot-btn {
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #06b6d4 100%) !important;
+    color: #ffffff !important;
+    border-color: rgba(167, 139, 250, 0.6) !important;
+    box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.45), 0 8px 10px -6px rgba(99, 102, 241, 0.3) !important;
+}
+
+body.light-theme #floating-ai-copilot-btn * {
+    color: #ffffff !important;
+}
+
+/* 4. Modal Container & Backdrop */
+body.light-theme #copilot-modal {
+    background-color: rgba(15, 23, 42, 0.45) !important;
+    backdrop-filter: blur(8px) !important;
+}
+
+body.light-theme #copilot-modal .bg-\[\#0c1017\] {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light-theme #copilot-modal #copilot-modal-title {
+    color: #0f172a !important;
+}
+
+body.light-theme #copilot-modal .border-\[\#171c28\],
+body.light-theme #copilot-modal .border-\[\#141824\],
+body.light-theme #copilot-modal .border-\[\#1e2330\],
+body.light-theme #copilot-modal .border-\[\#1e2333\],
+body.light-theme #copilot-modal .border-\[\#1a2030\] {
+    border-color: #e2e8f0 !important;
+}
+
+/* 5. Header Badges & Actions */
+body.light-theme #copilot-memory-badge {
+    background-color: #f3e8ff !important;
+    border-color: #d8b4fe !important;
+    color: #7e22ce !important;
+}
+
+body.light-theme #copilot-memory-badge i,
+body.light-theme #copilot-memory-badge span {
+    color: #7e22ce !important;
+}
+
+body.light-theme #copilot-modal .bg-cyan-500\/10 {
+    background-color: #ecfeff !important;
+    border-color: #a5f3fc !important;
+}
+
+body.light-theme #copilot-modal .text-cyan-400 {
+    color: #0e7490 !important;
+}
+
+body.light-theme #copilot-modal button[onclick*="exportCopilotConversation"],
+body.light-theme #copilot-modal button[onclick*="clearCopilotChat"],
+body.light-theme #copilot-modal button[onclick*="closeCopilotModal"] {
+    color: #475569 !important;
+}
+
+body.light-theme #copilot-modal button[onclick*="exportCopilotConversation"]:hover,
+body.light-theme #copilot-modal button[onclick*="clearCopilotChat"]:hover,
+body.light-theme #copilot-modal button[onclick*="closeCopilotModal"]:hover {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+
+body.light-theme #copilot-modal button[onclick*="exportCopilotConversation"] i,
+body.light-theme #copilot-modal button[onclick*="clearCopilotChat"] i,
+body.light-theme #copilot-modal button[onclick*="closeCopilotModal"] i {
+    color: #475569 !important;
+}
+
+/* 6. Topic Pills Bar & Badges in Light Mode */
+body.light-theme #copilot-topic-pills {
+    border-color: #e2e8f0 !important;
+}
+
+body.light-theme #copilot-topic-pills > span,
+body.light-theme #copilot-modal .font-mono.text-zinc-500 {
+    color: #64748b !important;
+    font-weight: 600 !important;
+}
+
+/* Color palettes for pills (Red, Orange, Rose, Amber, Emerald, Indigo, Purple, Teal, Blue, Cyan) */
+body.light-theme #copilot-modal button.bg-red-500\/10,
+body.light-theme #copilot-modal .bg-red-500\/10 {
+    background-color: #fef2f2 !important;
+    border-color: #fecaca !important;
+    color: #b91c1c !important;
+}
+body.light-theme #copilot-modal button.bg-red-500\/10:hover,
+body.light-theme #copilot-modal .bg-red-500\/10:hover {
+    background-color: #fee2e2 !important;
+    border-color: #f87171 !important;
+    color: #991b1b !important;
+}
+body.light-theme #copilot-modal .bg-red-500\/10 *,
+body.light-theme #copilot-modal .text-red-300,
+body.light-theme #copilot-modal .text-red-400 {
+    color: #b91c1c !important;
+}
+
+body.light-theme #copilot-modal button.bg-orange-500\/10,
+body.light-theme #copilot-modal .bg-orange-500\/10 {
+    background-color: #fff7ed !important;
+    border-color: #fed7aa !important;
+    color: #c2410c !important;
+}
+body.light-theme #copilot-modal button.bg-orange-500\/10:hover,
+body.light-theme #copilot-modal .bg-orange-500\/10:hover {
+    background-color: #ffedd5 !important;
+    border-color: #fb923c !important;
+    color: #9a3412 !important;
+}
+body.light-theme #copilot-modal .bg-orange-500\/10 *,
+body.light-theme #copilot-modal .text-orange-300,
+body.light-theme #copilot-modal .text-orange-400 {
+    color: #c2410c !important;
+}
+
+body.light-theme #copilot-modal button.bg-rose-500\/10,
+body.light-theme #copilot-modal .bg-rose-500\/10 {
+    background-color: #fff1f2 !important;
+    border-color: #fecdd3 !important;
+    color: #be123c !important;
+}
+body.light-theme #copilot-modal button.bg-rose-500\/10:hover,
+body.light-theme #copilot-modal .bg-rose-500\/10:hover {
+    background-color: #ffe4e6 !important;
+    border-color: #fb7185 !important;
+    color: #9f1239 !important;
+}
+body.light-theme #copilot-modal .bg-rose-500\/10 *,
+body.light-theme #copilot-modal .text-rose-300,
+body.light-theme #copilot-modal .text-rose-400 {
+    color: #be123c !important;
+}
+
+body.light-theme #copilot-modal button.bg-amber-500\/10,
+body.light-theme #copilot-modal .bg-amber-500\/10 {
+    background-color: #fffbeb !important;
+    border-color: #fde68a !important;
+    color: #b45309 !important;
+}
+body.light-theme #copilot-modal button.bg-amber-500\/10:hover,
+body.light-theme #copilot-modal .bg-amber-500\/10:hover {
+    background-color: #fef3c7 !important;
+    border-color: #f59e0b !important;
+    color: #92400e !important;
+}
+body.light-theme #copilot-modal .bg-amber-500\/10 *,
+body.light-theme #copilot-modal .text-amber-300,
+body.light-theme #copilot-modal .text-amber-400 {
+    color: #b45309 !important;
+}
+
+body.light-theme #copilot-modal button.bg-emerald-500\/10,
+body.light-theme #copilot-modal .bg-emerald-500\/10 {
+    background-color: #ecfdf5 !important;
+    border-color: #a7f3d0 !important;
+    color: #047857 !important;
+}
+body.light-theme #copilot-modal button.bg-emerald-500\/10:hover,
+body.light-theme #copilot-modal .bg-emerald-500\/10:hover {
+    background-color: #d1fae5 !important;
+    border-color: #34d399 !important;
+    color: #065f46 !important;
+}
+body.light-theme #copilot-modal .bg-emerald-500\/10 *,
+body.light-theme #copilot-modal .text-emerald-300,
+body.light-theme #copilot-modal .text-emerald-400 {
+    color: #047857 !important;
+}
+
+body.light-theme #copilot-modal button.bg-indigo-500\/10,
+body.light-theme #copilot-modal .bg-indigo-500\/10 {
+    background-color: #eef2ff !important;
+    border-color: #c7d2fe !important;
+    color: #4338ca !important;
+}
+body.light-theme #copilot-modal button.bg-indigo-500\/10:hover,
+body.light-theme #copilot-modal .bg-indigo-500\/10:hover {
+    background-color: #e0e7ff !important;
+    border-color: #818cf8 !important;
+    color: #3730a3 !important;
+}
+body.light-theme #copilot-modal .bg-indigo-500\/10 *,
+body.light-theme #copilot-modal .text-indigo-300,
+body.light-theme #copilot-modal .text-indigo-400 {
+    color: #4338ca !important;
+}
+
+body.light-theme #copilot-modal button.bg-purple-500\/10,
+body.light-theme #copilot-modal .bg-purple-500\/10 {
+    background-color: #faf5ff !important;
+    border-color: #e9d5ff !important;
+    color: #7e22ce !important;
+}
+body.light-theme #copilot-modal button.bg-purple-500\/10:hover,
+body.light-theme #copilot-modal .bg-purple-500\/10:hover {
+    background-color: #f3e8ff !important;
+    border-color: #c084fc !important;
+    color: #6b21a8 !important;
+}
+body.light-theme #copilot-modal .bg-purple-500\/10 *,
+body.light-theme #copilot-modal .text-purple-300,
+body.light-theme #copilot-modal .text-purple-400 {
+    color: #7e22ce !important;
+}
+
+body.light-theme #copilot-modal button.bg-teal-500\/10,
+body.light-theme #copilot-modal .bg-teal-500\/10 {
+    background-color: #f0fdfa !important;
+    border-color: #99f6e4 !important;
+    color: #0f766e !important;
+}
+body.light-theme #copilot-modal button.bg-teal-500\/10:hover,
+body.light-theme #copilot-modal .bg-teal-500\/10:hover {
+    background-color: #ccfbf1 !important;
+    border-color: #2dd4bf !important;
+    color: #115e59 !important;
+}
+body.light-theme #copilot-modal .bg-teal-500\/10 *,
+body.light-theme #copilot-modal .text-teal-300,
+body.light-theme #copilot-modal .text-teal-400 {
+    color: #0f766e !important;
+}
+
+body.light-theme #copilot-modal button.bg-blue-500\/10,
+body.light-theme #copilot-modal .bg-blue-500\/10 {
+    background-color: #eff6ff !important;
+    border-color: #bfdbfe !important;
+    color: #1d4ed8 !important;
+}
+body.light-theme #copilot-modal button.bg-blue-500\/10:hover,
+body.light-theme #copilot-modal .bg-blue-500\/10:hover {
+    background-color: #dbeafe !important;
+    border-color: #60a5fa !important;
+    color: #1e40af !important;
+}
+body.light-theme #copilot-modal .bg-blue-500\/10 *,
+body.light-theme #copilot-modal .text-blue-300,
+body.light-theme #copilot-modal .text-blue-400 {
+    color: #1d4ed8 !important;
+}
+
+body.light-theme #copilot-modal button.bg-cyan-500\/10,
+body.light-theme #copilot-modal .bg-cyan-500\/10 {
+    background-color: #ecfeff !important;
+    border-color: #a5f3fc !important;
+    color: #0e7490 !important;
+}
+body.light-theme #copilot-modal button.bg-cyan-500\/10:hover,
+body.light-theme #copilot-modal .bg-cyan-500\/10:hover {
+    background-color: #cffafe !important;
+    border-color: #22d3ee !important;
+    color: #155e75 !important;
+}
+body.light-theme #copilot-modal .bg-cyan-500\/10 *,
+body.light-theme #copilot-modal .text-cyan-300,
+body.light-theme #copilot-modal .text-cyan-400 {
+    color: #0e7490 !important;
+}
+
+body.light-theme #copilot-modal .bg-\[\#10141e\] {
+    background-color: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #334155 !important;
+}
+body.light-theme #copilot-modal .bg-\[\#10141e\]:hover {
+    background-color: #e2e8f0 !important;
+    border-color: #94a3b8 !important;
+    color: #0f172a !important;
+}
+body.light-theme #copilot-modal .bg-\[\#10141e\] * {
+    color: inherit !important;
+}
+
+/* 7. Chat Action Buttons in Light Mode (Quick Navigation, Set Budget, etc.) */
+body.light-theme #copilot-chat-window button.bg-indigo-600\/30,
+body.light-theme #copilot-chat-window .bg-indigo-600\/30 {
+    background-color: #eef2ff !important;
+    border-color: #c7d2fe !important;
+    color: #4338ca !important;
+    font-weight: 600 !important;
+}
+body.light-theme #copilot-chat-window button.bg-indigo-600\/30:hover,
+body.light-theme #copilot-chat-window .bg-indigo-600\/30:hover {
+    background-color: #4f46e5 !important;
+    border-color: #4338ca !important;
+    color: #ffffff !important;
+}
+body.light-theme #copilot-chat-window button.bg-indigo-600\/30 * {
+    color: inherit !important;
+}
+
+body.light-theme #copilot-chat-window button.bg-purple-600\/30,
+body.light-theme #copilot-chat-window .bg-purple-600\/30 {
+    background-color: #faf5ff !important;
+    border-color: #e9d5ff !important;
+    color: #7e22ce !important;
+    font-weight: 600 !important;
+}
+body.light-theme #copilot-chat-window button.bg-purple-600\/30:hover,
+body.light-theme #copilot-chat-window .bg-purple-600\/30:hover {
+    background-color: #7e22ce !important;
+    border-color: #6b21a8 !important;
+    color: #ffffff !important;
+}
+body.light-theme #copilot-chat-window button.bg-purple-600\/30 * {
+    color: inherit !important;
+}
+
+body.light-theme #copilot-chat-window button.bg-emerald-600\/30,
+body.light-theme #copilot-chat-window .bg-emerald-600\/30 {
+    background-color: #ecfdf5 !important;
+    border-color: #a7f3d0 !important;
+    color: #047857 !important;
+    font-weight: 600 !important;
+}
+body.light-theme #copilot-chat-window button.bg-emerald-600\/30:hover,
+body.light-theme #copilot-chat-window .bg-emerald-600\/30:hover {
+    background-color: #059669 !important;
+    border-color: #047857 !important;
+    color: #ffffff !important;
+}
+body.light-theme #copilot-chat-window button.bg-emerald-600\/30 * {
+    color: inherit !important;
+}
+
+body.light-theme #copilot-chat-window button.bg-blue-600\/30,
+body.light-theme #copilot-chat-window .bg-blue-600\/30 {
+    background-color: #eff6ff !important;
+    border-color: #bfdbfe !important;
+    color: #1d4ed8 !important;
+    font-weight: 600 !important;
+}
+body.light-theme #copilot-chat-window button.bg-blue-600\/30:hover,
+body.light-theme #copilot-chat-window .bg-blue-600\/30:hover {
+    background-color: #2563eb !important;
+    border-color: #1d4ed8 !important;
+    color: #ffffff !important;
+}
+body.light-theme #copilot-chat-window button.bg-blue-600\/30 * {
+    color: inherit !important;
+}
+
+body.light-theme #copilot-chat-window button.bg-amber-600\/30,
+body.light-theme #copilot-chat-window .bg-amber-600\/30 {
+    background-color: #fffbeb !important;
+    border-color: #fde68a !important;
+    color: #b45309 !important;
+    font-weight: 600 !important;
+}
+body.light-theme #copilot-chat-window button.bg-amber-600\/30:hover,
+body.light-theme #copilot-chat-window .bg-amber-600\/30:hover {
+    background-color: #d97706 !important;
+    border-color: #b45309 !important;
+    color: #ffffff !important;
+}
+body.light-theme #copilot-chat-window button.bg-amber-600\/30 * {
+    color: inherit !important;
+}
+
+body.light-theme #copilot-chat-window button.bg-cyan-600\/30,
+body.light-theme #copilot-chat-window .bg-cyan-600\/30 {
+    background-color: #ecfeff !important;
+    border-color: #a5f3fc !important;
+    color: #0e7490 !important;
+    font-weight: 600 !important;
+}
+body.light-theme #copilot-chat-window button.bg-cyan-600\/30:hover,
+body.light-theme #copilot-chat-window .bg-cyan-600\/30:hover {
+    background-color: #0891b2 !important;
+    border-color: #0e7490 !important;
+    color: #ffffff !important;
+}
+body.light-theme #copilot-chat-window button.bg-cyan-600\/30 * {
+    color: inherit !important;
+}
+
+body.light-theme #copilot-chat-window button.bg-zinc-600\/30,
+body.light-theme #copilot-chat-window .bg-zinc-600\/30 {
+    background-color: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #334155 !important;
+    font-weight: 600 !important;
+}
+body.light-theme #copilot-chat-window button.bg-zinc-600\/30:hover,
+body.light-theme #copilot-chat-window .bg-zinc-600\/30:hover {
+    background-color: #475569 !important;
+    border-color: #334155 !important;
+    color: #ffffff !important;
+}
+body.light-theme #copilot-chat-window button.bg-zinc-600\/30 * {
+    color: inherit !important;
+}
+
+/* 8. Suggested Next Questions Pills in Light Mode */
+body.light-theme #copilot-chat-window .bg-\[\#0e131f\] {
+    background-color: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+    color: #1e293b !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+}
+body.light-theme #copilot-chat-window .bg-\[\#0e131f\]:hover {
+    background-color: #ede9fe !important;
+    border-color: #a78bfa !important;
+    color: #5b21b6 !important;
+}
+body.light-theme #copilot-chat-window .bg-\[\#0e131f\] span {
+    color: inherit !important;
+}
+body.light-theme #copilot-chat-window .border-t.border-\[\#1a2030\] {
+    border-color: #e2e8f0 !important;
+}
+body.light-theme #copilot-chat-window .border-t.border-\[\#1a2030\] span {
+    color: #64748b !important;
+    font-weight: 600 !important;
+}
+
+/* 9. Bot Bubble & Markdown Content in Light Mode */
+body.light-theme #copilot-chat-window .copilot-bot-bubble,
+body.light-theme #copilot-chat-window .bg-\[\#131722\] {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    color: #1e293b !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+}
+body.light-theme #copilot-chat-window .copilot-bot-bubble p,
+body.light-theme #copilot-chat-window .copilot-bot-bubble li,
+body.light-theme #copilot-chat-window .copilot-bot-bubble span,
+body.light-theme #copilot-chat-window .bg-\[\#131722\] p,
+body.light-theme #copilot-chat-window .bg-\[\#131722\] li,
+body.light-theme #copilot-chat-window .bg-\[\#131722\] span {
+    color: #1e293b;
+}
+body.light-theme #copilot-chat-window .copilot-bot-bubble strong,
+body.light-theme #copilot-chat-window .bg-\[\#131722\] strong {
+    color: #0f172a !important;
+}
+body.light-theme #copilot-chat-window .copilot-bot-bubble em {
+    color: #334155 !important;
+}
+body.light-theme #copilot-chat-window .bg-purple-600\/20 {
+    background-color: #ede9fe !important;
+    border-color: #c4b5fd !important;
+    color: #6d28d9 !important;
+}
+body.light-theme #copilot-chat-window .bg-purple-600\/20 i {
+    color: #6d28d9 !important;
+}
+
+/* Response Header Banner & Copy Button */
+body.light-theme #copilot-chat-window .border-b.border-\[\#1c2233\] {
+    border-color: #e2e8f0 !important;
+}
+body.light-theme #copilot-chat-window .border-b.border-\[\#1c2233\] span.text-cyan-400 {
+    color: #0e7490 !important;
+}
+body.light-theme #copilot-chat-window .border-b.border-\[\#1c2233\] span.text-cyan-400 i {
+    color: #0e7490 !important;
+}
+body.light-theme #copilot-chat-window button[onclick*="copyCopilotResponse"] {
+    background-color: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #475569 !important;
+}
+body.light-theme #copilot-chat-window button[onclick*="copyCopilotResponse"]:hover {
+    background-color: #e2e8f0 !important;
+    border-color: #94a3b8 !important;
+    color: #0f172a !important;
+}
+body.light-theme #copilot-chat-window button[onclick*="copyCopilotResponse"] * {
+    color: inherit !important;
+}
+
+/* Bullet Dots and Code in Light Mode */
+body.light-theme #copilot-chat-window span.text-cyan-400.font-bold {
+    color: #0891b2 !important;
+}
+body.light-theme #copilot-chat-window code.bg-\[\#101420\] {
+    background-color: #fef3c7 !important;
+    border-color: #fde68a !important;
+    color: #92400e !important;
+}
+body.light-theme #copilot-chat-window pre.bg-\[\#080b12\],
+body.light-theme #copilot-chat-window pre {
+    background-color: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+body.light-theme #copilot-chat-window pre code {
+    color: #0f172a !important;
+}
+
+/* Tables inside Bot Markdown */
+body.light-theme #copilot-chat-window .bg-\[\#090d16\] {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+}
+body.light-theme #copilot-chat-window table {
+    background-color: #ffffff !important;
+}
+body.light-theme #copilot-chat-window thead {
+    background-color: #f1f5f9 !important;
+}
+body.light-theme #copilot-chat-window th {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    border-color: #e2e8f0 !important;
+}
+body.light-theme #copilot-chat-window td {
+    color: #1e293b !important;
+    border-color: #f1f5f9 !important;
+}
+body.light-theme #copilot-chat-window tr:hover td {
+    background-color: #f8fafc !important;
+}
+
+/* 10. Chat Input Field in Light Mode */
+body.light-theme #copilot-modal input#copilot-input {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+body.light-theme #copilot-modal input#copilot-input::placeholder {
+    color: #94a3b8 !important;
+}
+body.light-theme #copilot-modal input#copilot-input:focus {
+    border-color: #8b5cf6 !important;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15) !important;
+}
+
+body.light-theme #copilot-doc-file-btn {
+    background-color: #f5f3ff !important;
+    border-color: #c4b5fd !important;
+    color: #6d28d9 !important;
+}
+body.light-theme #copilot-doc-file-btn:hover {
+    background-color: #ede9fe !important;
+    border-color: #a78bfa !important;
+    color: #5b21b6 !important;
+}
+body.light-theme #copilot-doc-file-btn i {
+    color: #6d28d9 !important;
+}
+
+/* ================= BROWSER AUTOFILL SUPPRESSION ================= */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #0d0d10 inset !important;
+    -webkit-text-fill-color: #ffffff !important;
+    caret-color: #ffffff !important;
+    transition: background-color 5000s ease-in-out 0s !important;
+}
+
+body.light-theme input:-webkit-autofill,
+body.light-theme input:-webkit-autofill:hover, 
+body.light-theme input:-webkit-autofill:focus, 
+body.light-theme input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #f8fafc inset !important;
+    -webkit-text-fill-color: #0f172a !important;
+    caret-color: #0f172a !important;
+}
+
+/* ========================================================= */
+/* UNIVERSAL RESPONSIVE ENGINE & MULTI-DEVICE OPTIMIZATION   */
+/* Devices: Phone, Tablet/Pad, Laptop, PC, TV / 4K Boardroom */
+/* Prevents horizontal scroll on all small viewports         */
+/* ========================================================= */
+
+/* Mobile Touch & Overflow Containment */
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+/* Ensure all flex rows and grids wrap gracefully */
+.table-scroll-container {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* 1. SMALL MOBILE PHONES (<= 480px, iPhone SE, Mini, Galaxy S) */
+@media (max-width: 480px) {
+    /* Container padding */
+    .glass-panel {
+        padding: 0.875rem !important;
+        border-radius: 1rem !important;
+    }
+
+    /* KPI numbers fluid scaling to prevent card bursting */
+    #kpi-risk-score,
+    #kpi-eal,
+    #kpi-var95,
+    #kpi-cvar95,
+    #opt-spent,
+    #opt-reduction,
+    #opt-rosi,
+    #opt-post-eal,
+    #opt-controls-count {
+        font-size: 1.5rem !important;
+        line-height: 1.85rem !important;
+        word-break: break-all;
+    }
+
+    /* Modal containment on small phones */
+    #data-exchange-modal > div,
+    #copilot-modal > div {
+        width: calc(100vw - 1rem) !important;
+        max-width: calc(100vw - 1rem) !important;
+        margin: 0.5rem auto !important;
+        padding: 0.875rem !important;
+        border-radius: 1.25rem !important;
+        max-height: 94dvh !important;
+    }
+
+    /* Chat bubble sizing on small screens */
+    #copilot-chat-window .copilot-bot-bubble,
+    #copilot-chat-window .chat-user-bubble {
+        max-width: 95% !important;
+        padding: 0.75rem 0.875rem !important;
+    }
+
+    /* Code blocks inside chat never exceed width */
+    #copilot-chat-window pre {
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        padding: 0.5rem !important;
+        font-size: 0.7rem !important;
+    }
+
+    #copilot-chat-window table {
+        display: block !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+    }
+
+    /* Compact tab navigation on small phone */
+    .tab-btn {
+        padding: 0.35rem 0.55rem !important;
+        font-size: 0.75rem !important;
+        gap: 0.35rem !important;
+    }
+
+    /* Quick demo personas grid on login */
+    .login-persona-btn {
+        padding: 0.375rem 0.25rem !important;
+    }
+}
+
+/* 2. ALL MOBILE SCREENS (<= 640px) */
+@media (max-width: 640px) {
+    /* Prevent any body-level horizontal scrolling */
+    html, body {
+        overflow-x: hidden !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+    }
+
+    /* Chart heights on mobile */
+    .h-64 {
+        height: 15rem !important;
+    }
+    .h-80 {
+        height: 17rem !important;
+    }
+    .h-96 {
+        height: 19rem !important;
+    }
+
+    /* Table text size for mobile readability */
+    table thead th,
+    table tbody td {
+        white-space: nowrap;
+    }
+
+    /* Slider thumb touch ergonomics */
+    input[type=range] {
+        height: 8px;
+    }
+
+    /* Topic pills in Copilot & Data Exchange smooth swipe */
+    #copilot-topic-pills,
+    #preset-filter-pills,
+    #modal-section-presets .overflow-x-auto {
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x mandatory;
+    }
+    #copilot-topic-pills > *,
+    #preset-filter-pills > * {
+        scroll-snap-align: start;
+    }
+}
+
+/* 3. TABLETS & PADS (641px - 1024px, iPad, iPad Mini, iPad Pro) */
+@media (min-width: 641px) and (max-width: 1024px) {
+    .glass-panel {
+        padding: 1.25rem;
+    }
+
+    .h-64 {
+        height: 17.5rem !important;
+    }
+    .h-80 {
+        height: 21rem !important;
+    }
+    .h-96 {
+        height: 23rem !important;
+    }
+
+    /* Touch target comfort */
+    button, select, input {
+        min-height: 36px;
+    }
+
+    #data-exchange-modal > div,
+    #copilot-modal > div {
+        max-width: 90vw !important;
+    }
+}
+
+/* 4. LAPTOPS & STANDARD DESKTOPS (1025px - 1920px) */
+@media (min-width: 1025px) and (max-width: 1920px) {
+    .glass-panel {
+        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .glass-panel:hover {
+        border-color: rgba(99, 102, 241, 0.4) !important;
+        box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.9);
+    }
+}
+
+/* 5. TV, LARGE BOARDROOM SCREENS & 4K UHD (>= 1921px and >= 2560px) */
+@media (min-width: 1921px) {
+    /* Fluid widescreen container expansion */
+    .max-w-7xl {
+        max-width: 1680px !important;
+    }
+
+    body {
+        font-size: 15px;
+    }
+
+    .glass-panel {
+        padding: 1.75rem !important;
+        border-radius: 1.5rem !important;
+    }
+
+    /* Majestic chart heights on boardroom displays */
+    .h-64 {
+        height: 22rem !important;
+    }
+    .h-80 {
+        height: 26rem !important;
+    }
+    .h-96 {
+        height: 30rem !important;
+    }
+
+    /* Highly visible KPI metrics from boardroom distances */
+    #kpi-risk-score,
+    #kpi-eal,
+    #kpi-var95,
+    #kpi-cvar95 {
+        font-size: 2.75rem !important;
+        line-height: 3rem !important;
+    }
+
+    #data-exchange-modal > div,
+    #copilot-modal > div {
+        max-width: 54rem !important;
+    }
+}
+
+@media (min-width: 2560px) {
+    /* Ultra-wide 21:9 monitors & 4K Conference Displays */
+    .max-w-7xl {
+        max-width: 2200px !important;
+    }
+
+    body {
+        font-size: 16px;
+    }
+
+    .glass-panel {
+        padding: 2.25rem !important;
+        border-radius: 1.75rem !important;
+    }
+
+    .h-64 {
+        height: 26rem !important;
+    }
+    .h-80 {
+        height: 32rem !important;
+    }
+    .h-96 {
+        height: 36rem !important;
+    }
+
+    #kpi-risk-score,
+    #kpi-eal,
+    #kpi-var95,
+    #kpi-cvar95 {
+        font-size: 3.5rem !important;
+        line-height: 3.75rem !important;
+    }
+
+    #data-exchange-modal > div,
+    #copilot-modal > div {
+        max-width: 64rem !important;
+    }
+}
+
+/* 6. TV Remote & Keyboard Navigation High-Contrast Focus Ring */
+:focus-visible {
+    outline: 2px solid #818cf8 !important;
+    outline-offset: 2px !important;
+}
+
+/* 7. iOS Safari momentum scrolling */
+@supports (-webkit-touch-callout: none) {
+    .overflow-x-auto, .overflow-y-auto {
+        -webkit-overflow-scrolling: touch;
+    }
+}
+

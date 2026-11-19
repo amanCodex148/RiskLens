@@ -1,0 +1,36 @@
+services:
+  risklens:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: risklens:latest
+    container_name: risklens-platform
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - HOST=0.0.0.0
+      - WORKERS=2
+      - RISKLENS_ENV=production
+      - RISKLENS_REQUIRE_AUTH=false  # Set to true for strict production enterprise authentication
+      - RISKLENS_DATA_DIR=/app/data
+      - RISKLENS_DB_PATH=/app/data/risklens_users.db
+    volumes:
+      # Named volume for persistent SQLite user database and uploaded datasets
+      - risklens_data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+volumes:
+  risklens_data:
+    name: risklens_data

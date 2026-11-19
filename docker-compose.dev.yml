@@ -1,0 +1,21 @@
+# ==============================================================================
+# RiskLens Platform - Docker Compose Development Override
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+# ==============================================================================
+
+services:
+  risklens:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    volumes:
+      # Bind mount source code for live hot-reloading
+      - ./backend:/app/backend
+      - ./frontend:/app/frontend
+      - ./tests:/app/tests
+      - ./data:/app/data
+    environment:
+      - PORT=8000
+      - HOST=0.0.0.0
+      - DEBUG=1

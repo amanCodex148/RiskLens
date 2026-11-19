@@ -1,0 +1,37 @@
+# Python bytecode and build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+.venv/
+env/
+venv/
+ENV/
+
+# Version control & editors
+.git/
+.gitignore
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Test & coverage artifacts
+.coverage
+htmlcov/
+.pytest_cache/
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Transient SQLite database runtime lock files
+data/*.db-wal
+data/*.db-shm
