@@ -769,6 +769,14 @@ class TelemetryService:
         self.initiatives: List[SecurityInitiative] = get_default_security_initiatives()
 
     def _load_initial_metadata(self) -> Dict[str, Any]:
+        try:
+            from backend.db.connection import get_db_connection
+            with get_db_connection() as conn:
+                row = conn.execute("SELECT payload_json FROM active_telemetry_state WHERE key = %s", ("active_metadata",)).fetchone()
+                if row and row.get("payload_json"):
+                    return json.loads(row["payload_json"])
+        except Exception:
+            pass
         if os.path.exists(CUSTOM_METADATA_FILE):
             try:
                 with open(CUSTOM_METADATA_FILE, "r", encoding="utf-8") as f:
@@ -800,6 +808,15 @@ class TelemetryService:
             pass
 
     def _load_initial_assets(self) -> List[Asset]:
+        try:
+            from backend.db.connection import get_db_connection
+            with get_db_connection() as conn:
+                row = conn.execute("SELECT payload_json FROM active_telemetry_state WHERE key = %s", ("active_assets",)).fetchone()
+                if row and row.get("payload_json"):
+                    raw = json.loads(row["payload_json"])
+                    return [Asset.model_validate(a) for a in raw]
+        except Exception:
+            pass
         if os.path.exists(CUSTOM_ASSETS_FILE):
             try:
                 self._last_mtime = os.path.getmtime(CUSTOM_ASSETS_FILE)
@@ -848,26 +865,62 @@ class TelemetryService:
                 self.metadata = dict(metadata)
                 self.metadata["asset_count"] = len(snapshot)
         if persist:
-            os.makedirs(DATA_DIR, exist_ok=True)
-            import tempfile
-            with tempfile.NamedTemporaryFile("w", dir=DATA_DIR, delete=False, encoding="utf-8") as tf:
-                json.dump([a.model_dump() for a in snapshot], tf, indent=2)
-                temp_name = tf.name
-            os.replace(temp_name, CUSTOM_ASSETS_FILE)
+            # 1. Persist directly to PostgreSQL
+            try:
+                from datetime import datetime, timezone
+                from backend.db.connection import get_db_connection
+                now_iso = datetime.now(timezone.utc).isoformat()
+                assets_json = json.dumps([a.model_dump() for a in snapshot])
+                with get_db_connection() as conn:
+                    conn.execute("""
+                        INSERT INTO active_telemetry_state (key, payload_json, updated_at)
+                        VALUES (%s, %s, %s)
+                        ON CONFLICT (key) DO UPDATE SET
+                            payload_json = EXCLUDED.payload_json,
+                            updated_at = EXCLUDED.updated_at;
+                    """, ("active_assets", assets_json, now_iso))
+                    if metadata:
+                        meta_json = json.dumps(self.metadata)
+                        conn.execute("""
+                            INSERT INTO active_telemetry_state (key, payload_json, updated_at)
+                            VALUES (%s, %s, %s)
+                            ON CONFLICT (key) DO UPDATE SET
+                                payload_json = EXCLUDED.payload_json,
+                                updated_at = EXCLUDED.updated_at;
+                        """, ("active_metadata", meta_json, now_iso))
+            except Exception as e:
+                pass
 
-            if metadata:
-                with tempfile.NamedTemporaryFile("w", dir=DATA_DIR, delete=False, encoding="utf-8") as mtf:
-                    json.dump(self.metadata, mtf, indent=2)
-                    meta_temp_name = mtf.name
-                os.replace(meta_temp_name, CUSTOM_METADATA_FILE)
+            # 2. Maintain local cached snapshot
+            try:
+                os.makedirs(DATA_DIR, exist_ok=True)
+                import tempfile
+                with tempfile.NamedTemporaryFile("w", dir=DATA_DIR, delete=False, encoding="utf-8") as tf:
+                    json.dump([a.model_dump() for a in snapshot], tf, indent=2)
+                    temp_name = tf.name
+                os.replace(temp_name, CUSTOM_ASSETS_FILE)
 
-            with self._lock:
-                try:
-                    self._last_mtime = os.path.getmtime(CUSTOM_ASSETS_FILE)
-                except OSError:
-                    pass
+                if metadata:
+                    with tempfile.NamedTemporaryFile("w", dir=DATA_DIR, delete=False, encoding="utf-8") as mtf:
+                        json.dump(self.metadata, mtf, indent=2)
+                        meta_temp_name = mtf.name
+                    os.replace(meta_temp_name, CUSTOM_METADATA_FILE)
+
+                with self._lock:
+                    try:
+                        self._last_mtime = os.path.getmtime(CUSTOM_ASSETS_FILE)
+                    except OSError:
+                        pass
+            except Exception:
+                pass
 
     def reset_to_default(self):
+        try:
+            from backend.db.connection import get_db_connection
+            with get_db_connection() as conn:
+                conn.execute("DELETE FROM active_telemetry_state WHERE key IN (%s, %s)", ("active_assets", "active_metadata"))
+        except Exception:
+            pass
         if os.path.exists(CUSTOM_ASSETS_FILE):
             try:
                 os.remove(CUSTOM_ASSETS_FILE)

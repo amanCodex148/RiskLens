@@ -106,7 +106,7 @@ class AiRiskPrioritizationEngine:
             "total_assets_scored": len(ranked_items)
         }
 
-        # Save to SQLite conversation memory vault if session_id is active
+        # Save to PostgreSQL conversation memory vault if session_id is active
         if session_id:
             try:
                 mem_store = get_memory_store()

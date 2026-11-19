@@ -211,7 +211,7 @@ def assistant_query(
     if not session_id:
         session_id = f"sess_{secrets.token_hex(8)}"
 
-    # Fetch existing conversation history from SQLite if not passed explicitly
+    # Fetch existing conversation history from PostgreSQL if not passed explicitly
     history = req.history
     if history is None:
         history = memory_store.get_recent_turns(session_id=session_id, user_email=user_email, max_turns=6)
@@ -993,7 +993,7 @@ def _verify_admin_access(authorization: Optional[str] = None, token_query: Optio
     """
     Validates authorization token for administrative operations (/data/import, /data/reset, /datasets/{id}/load).
     When RISKLENS_REQUIRE_AUTH is explicitly set to true/1/yes, a valid Bearer token is strictly required.
-    If a Bearer token or token query parameter is provided in any mode, it is validated against the SQLite credential vault.
+    If a Bearer token or token query parameter is provided in any mode, it is validated against the PostgreSQL credential vault.
     """
     import os
     from backend.api.auth import _auth_store
@@ -1033,7 +1033,7 @@ def import_data(req: ImportDataRequest, authorization: Optional[str] = Header(No
     """
     Imports real enterprise asset telemetry and vulnerabilities in JSON or CSV format.
     Strictly prevents duplicate data ingestion (identifies identical data even under different names)
-    and persists the imported dataset and its assets into the SQLite backend database.
+    and persists the imported dataset and its assets into the PostgreSQL backend database.
     """
     admin_user = _verify_admin_access(authorization)
     fmt = req.format.lower().strip()
@@ -1121,7 +1121,7 @@ def import_data(req: ImportDataRequest, authorization: Optional[str] = Header(No
             _optimizer.generate_efficient_frontier()
             _compliance_engine.get_all_framework_scores()
 
-        # Persist dataset and its individual assets into backend SQLite database
+        # Persist dataset and its individual assets into backend PostgreSQL database
         raw_payload = req.content if req.content else (json.dumps(req.data) if req.data else "")
         imported_by_user = admin_user.email if admin_user else "admin"
         ds_record = ds_store.save_imported_dataset(
@@ -1169,7 +1169,7 @@ def import_data(req: ImportDataRequest, authorization: Optional[str] = Header(No
 @api_router.get("/data/imports")
 def list_saved_datasets(authorization: Optional[str] = Header(None)):
     """
-    Returns all enterprise datasets stored in the SQLite database.
+    Returns all enterprise datasets stored in the PostgreSQL database.
     """
     _verify_admin_access(authorization)
     ds_store = get_dataset_store()
@@ -1305,7 +1305,7 @@ def list_industry_datasets(include_custom: bool = Query(False, description="Opti
                 "id": f"CUSTOM:{c['dataset_id']}",
                 "name": c["name"],
                 "sector": c["sector"],
-                "description": f"Custom imported enterprise dataset ({c['asset_count']} assets, {c['total_cves']} CVEs). Stored in SQLite.",
+                "description": f"Custom imported enterprise dataset ({c['asset_count']} assets, {c['total_cves']} CVEs). Stored in PostgreSQL.",
                 "asset_count": c["asset_count"],
                 "risk_profile": f"Custom Enterprise Telemetry • EAL: ₹{round(c['recalculated_eal_inr'], 2):,}",
                 "regulatory_focus": ["Custom Assessment", "Enterprise FAIR"],
@@ -1363,7 +1363,7 @@ def load_industry_dataset(dataset_id: str, authorization: Optional[str] = Header
     clean_id = dataset_id.replace("CUSTOM:", "") if dataset_id.startswith("CUSTOM:") else dataset_id
     entry = get_industry_dataset_by_id(clean_id)
     if not entry:
-        # Check if it's a stored custom dataset in SQLite
+        # Check if it's a stored custom dataset in PostgreSQL
         ds_store = get_dataset_store()
         loaded = ds_store.get_dataset(clean_id)
         if loaded:

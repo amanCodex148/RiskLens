@@ -3597,7 +3597,7 @@ function applyPresetFilters() {
             id: `CUSTOM:${c.dataset_id}`,
             name: c.name,
             sector: c.sector || "Custom Sector",
-            description: `Imported custom dataset with ${c.asset_count} assets & ${c.total_cves} CVEs. Persisted in SQLite.`,
+            description: `Imported custom dataset with ${c.asset_count} assets & ${c.total_cves} CVEs. Persisted in PostgreSQL.`,
             risk_profile: `Custom Enterprise Risk • EAL: ${typeof formatMoney === "function" ? formatMoney(c.recalculated_eal_inr) : '₹' + Math.round(c.recalculated_eal_inr || 0).toLocaleString()}`,
             asset_count: c.asset_count,
             regulatory_focus: ["Enterprise FAIR", "Custom Telemetry"],
@@ -3616,7 +3616,7 @@ function applyPresetFilters() {
             id: `CUSTOM:${c.dataset_id}`,
             name: c.name,
             sector: c.sector || "Custom Sector",
-            description: `Imported custom dataset with ${c.asset_count} assets & ${c.total_cves} CVEs. Persisted in SQLite.`,
+            description: `Imported custom dataset with ${c.asset_count} assets & ${c.total_cves} CVEs. Persisted in PostgreSQL.`,
             risk_profile: `Custom Enterprise Risk • EAL: ${typeof formatMoney === "function" ? formatMoney(c.recalculated_eal_inr) : '₹' + Math.round(c.recalculated_eal_inr || 0).toLocaleString()}`,
             asset_count: c.asset_count,
             regulatory_focus: ["Enterprise FAIR", "Custom Telemetry"],
@@ -4221,7 +4221,7 @@ function renderStoredDatasetsList(datasets) {
                                     <span>Active Now</span>
                                 </span>
                             ` : `
-                                <span class="text-[10px] text-zinc-500 font-mono">SQLite Stored</span>
+                                <span class="text-[10px] text-zinc-500 font-mono">PostgreSQL Stored</span>
                             `}
                         </div>
                         <div class="text-[11px] text-zinc-400 mt-1 flex items-center space-x-3 flex-wrap gap-y-1 font-mono">

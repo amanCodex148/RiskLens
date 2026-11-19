@@ -1,7 +1,7 @@
 # ==============================================================================
 # RiskLens Platform - Containerfile / Dockerfile
 # Production-ready, secure, lightweight container for Continuous Cyber Risk
-# Quantification & Investment Optimization Platform
+# Quantification & Investment Optimization Platform (PostgreSQL-backed)
 # ==============================================================================
 
 # Base image: Official Python 3.12 Debian slim
@@ -16,14 +16,19 @@ ENV PYTHONUNBUFFERED=1 \
     WORKERS=2 \
     RISKLENS_ENV=production \
     RISKLENS_DATA_DIR=/app/data \
-    RISKLENS_DB_PATH=/app/data/risklens_users.db
+    DATABASE_URL=postgresql://risklens:risklens_password@postgres:5432/risklens \
+    POSTGRES_HOST=postgres \
+    POSTGRES_PORT=5432 \
+    POSTGRES_DB=risklens \
+    POSTGRES_USER=risklens \
+    POSTGRES_PASSWORD=risklens_password
 
 # Set container working directory
 WORKDIR /app
 
-# Install security updates and curl for health check utility
+# Install security updates, curl for health check, and postgresql-client for pg_isready
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
+    && apt-get install -y --no-install-recommends curl postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 # Create dedicated non-root risklens system user and group
@@ -42,6 +47,7 @@ COPY backend /app/backend
 COPY frontend /app/frontend
 COPY tests /app/tests
 COPY data /app/data
+COPY scripts /app/scripts
 
 # Ensure persistent data directory exists and assign ownership to risklens user
 RUN mkdir -p /app/data \
@@ -53,7 +59,7 @@ USER risklens
 # Expose HTTP port
 EXPOSE 8000
 
-# Declare persistent volume mount point for SQLite database and custom datasets
+# Declare persistent volume mount point for telemetry data and exported reports
 VOLUME ["/app/data"]
 
 # Container healthcheck using liveness probe endpoint

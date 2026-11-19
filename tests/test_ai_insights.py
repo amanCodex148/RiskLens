@@ -9,7 +9,7 @@ Validates:
 3. Multi-Horizon Inertial Risk Trends (Current Baseline, 30d, 60d, 90d drift).
 4. Prioritized Areas Requiring Executive Management Attention (Urgency tiers & C-suite assignments).
 5. REST API Endpoints: POST & GET /api/assistant/insights.
-6. ProjectKnowledgeAgent natural language inquiry routing & SQLite memory vault persistence.
+6. ProjectKnowledgeAgent natural language inquiry routing & PostgreSQL memory vault persistence.
 """
 
 import unittest

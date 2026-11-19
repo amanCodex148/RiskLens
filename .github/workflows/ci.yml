@@ -10,6 +10,20 @@ jobs:
   test:
     name: Run Automated Test Matrix
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: risklens
+          POSTGRES_USER: risklens
+          POSTGRES_PASSWORD: risklens_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout Code Repository
         uses: actions/checkout@v4
@@ -25,9 +39,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Execute Full Automated Test Suite (142 Tests)
+      - name: Execute Full Automated Test Suite (154 Tests)
         env:
           PYTHONPATH: .
+          DATABASE_URL: postgresql://risklens:risklens_password@localhost:5432/risklens
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: risklens
+          POSTGRES_USER: risklens
+          POSTGRES_PASSWORD: risklens_password
         run: |
           python -m unittest discover -s tests -p "test_*.py" -v
 
@@ -39,19 +59,9 @@ jobs:
       - name: Checkout Code Repository
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Production Docker Image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          load: true
-          tags: risklens:ci
-
-      - name: Verify Container Liveness & Health Probe
+      - name: Build & Verify Production Compose Stack
         run: |
-          docker run -d --name risklens-ci -p 8000:8000 risklens:ci
+          docker compose up -d --build
           echo "Waiting for RiskLens container to boot and pass health probe..."
           SUCCESS=0
           for i in {1..30}; do
@@ -64,10 +74,9 @@ jobs:
             echo "Waiting for container startup... ($i/30)"
             sleep 2
           done
-          docker logs risklens-ci
+          docker compose logs
           if [ $SUCCESS -ne 1 ]; then
             echo "Container health check timed out after 60 seconds."
             exit 1
           fi
-          docker stop risklens-ci
-          docker rm risklens-ci
+          docker compose down -v

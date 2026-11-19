@@ -126,7 +126,7 @@ class AiInsightsEngine:
         ]
 
         # ----------------------------------------------------------------------
-        # 6. Save to SQLite Chat Memory Vault if session provided
+        # 6. Save to PostgreSQL Chat Memory Vault if session provided
         # ----------------------------------------------------------------------
         if session_id:
             try:

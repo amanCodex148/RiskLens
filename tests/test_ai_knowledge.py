@@ -157,7 +157,7 @@ class TestAiKnowledgeAgent(unittest.TestCase):
         self.assertTrue(data.get("memory_active"))
 
     def test_chat_memory_store_lifecycle(self):
-        """Verifies SQLite persistent chat memory save, retrieve, and clear operations."""
+        """Verifies PostgreSQL persistent chat memory save, retrieve, and clear operations."""
         from backend.engine.chat_memory import ChatMemoryStore
         store = ChatMemoryStore(db_path=":memory:")
         sess = "test_sess_101"

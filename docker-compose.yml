@@ -1,4 +1,28 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: risklens-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-risklens}
+      - POSTGRES_USER=${POSTGRES_USER:-risklens}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-risklens_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      # Named volume for persistent enterprise PostgreSQL database
+      - risklens_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-risklens} -d ${POSTGRES_DB:-risklens}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
   risklens:
     build:
       context: .
@@ -6,6 +30,9 @@ services:
     image: risklens:latest
     container_name: risklens-platform
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "8000:8000"
     environment:
@@ -14,10 +41,15 @@ services:
       - WORKERS=2
       - RISKLENS_ENV=production
       - RISKLENS_REQUIRE_AUTH=false  # Set to true for strict production enterprise authentication
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-risklens}:${POSTGRES_PASSWORD:-risklens_password}@postgres:5432/${POSTGRES_DB:-risklens}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-risklens}
+      - POSTGRES_USER=${POSTGRES_USER:-risklens}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-risklens_password}
       - RISKLENS_DATA_DIR=/app/data
-      - RISKLENS_DB_PATH=/app/data/risklens_users.db
     volumes:
-      # Named volume for persistent SQLite user database and uploaded datasets
+      # Named volume for uploaded telemetry datasets and exported reports
       - risklens_data:/app/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/api/health"]
@@ -32,5 +64,7 @@ services:
         max-file: "3"
 
 volumes:
+  risklens_postgres_data:
+    name: risklens_postgres_data
   risklens_data:
     name: risklens_data

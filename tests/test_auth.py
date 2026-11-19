@@ -1,7 +1,7 @@
 """
 Unit tests for RiskLens Authentication & User Management.
 Tests Sign Up, Sign In, Token Validation, Forgot Password, Password Reset,
-and SQLite Persistent Credential Storage.
+and PostgreSQL Persistent Credential Storage.
 """
 
 import unittest
@@ -10,7 +10,7 @@ import secrets
 from datetime import datetime, timezone, timedelta
 from fastapi.testclient import TestClient
 from backend.main import app
-from backend.api.auth import _auth_store, SqliteAuthStore, UserSignUpRequest
+from backend.api.auth import _auth_store, PostgresAuthStore, SqliteAuthStore, UserSignUpRequest
 
 
 class TestAuthentication(unittest.TestCase):
@@ -117,11 +117,11 @@ class TestAuthentication(unittest.TestCase):
         self.assertEqual(fp_resp.status_code, 200)
         token = fp_resp.json()["reset_token"]
 
-        # Artificially age the token in SQLite by 20 minutes (exceeding 15-minute TTL)
+        # Artificially age the token in PostgreSQL by 20 minutes (exceeding 15-minute TTL)
         with _auth_store._get_conn() as conn:
             from datetime import datetime, timezone, timedelta
             expired_time = (datetime.now(timezone.utc) - timedelta(minutes=20)).isoformat()
-            conn.execute("UPDATE reset_tokens SET created_at = ? WHERE token = ?", (expired_time, token))
+            conn.execute("UPDATE reset_tokens SET created_at = %s WHERE token = %s", (expired_time, token))
             conn.commit()
 
         # Attempt reset with expired token
@@ -169,9 +169,9 @@ class TestAuthentication(unittest.TestCase):
         self.assertEqual(auth_resp.status_code, 200)
         self.assertGreater(len(auth_resp.json()), 0)
 
-    def test_persistent_sqlite_credential_storage(self):
-        """Verifies credentials persist on disk across store re-instantiations."""
-        store1 = SqliteAuthStore(db_path=_auth_store.db_path)
+    def test_persistent_postgres_credential_storage(self):
+        """Verifies credentials persist in PostgreSQL across store re-instantiations."""
+        store1 = PostgresAuthStore(db_url=_auth_store.db_url)
         test_email = f"persist_{secrets.token_hex(4)}@enterprise.com"
         password = "SecurePassword@2026"
 
@@ -183,8 +183,8 @@ class TestAuthentication(unittest.TestCase):
             password=password
         ))
 
-        # Create a new second store instance reading from the same SQLite file
-        store2 = SqliteAuthStore(db_path=_auth_store.db_path)
+        # Create a new second store instance reading from the same PostgreSQL database
+        store2 = PostgresAuthStore(db_url=_auth_store.db_url)
         token, profile = store2.authenticate_user(test_email, password)
         self.assertEqual(profile.email, test_email)
         self.assertEqual(profile.full_name, "Persistent User")

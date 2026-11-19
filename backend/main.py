@@ -54,6 +54,13 @@ async def lifespan(app: FastAPI):
     """
     def _prewarm():
         logger.info("Initializing RiskLens engine pre-warming...")
+        # 0. Ensure PostgreSQL schema & connection pool are ready
+        try:
+            from backend.db.connection import init_db
+            init_db()
+        except Exception as e:
+            logger.warning(f"PostgreSQL initialization warning during prewarm: {e}")
+
         # 1. Warm baseline Monte Carlo (5,000 iterations across enterprise assets)
         _risk_engine.run_enterprise_simulation()
         # 2. Warm candidate initiatives ROSI & Knapsack baseline
@@ -72,6 +79,11 @@ async def lifespan(app: FastAPI):
         await loop.run_in_executor(pool, _prewarm)
 
     yield
+    try:
+        from backend.db.connection import close_db
+        close_db()
+    except Exception:
+        pass
     logger.info("RiskLens shutdown initiated.")
 
 
@@ -189,6 +201,7 @@ def health_check():
             "service": "RiskLens Platform",
             "version": "1.0.0",
             "database": db_status,
+            "database_engine": "PostgreSQL",
             "assets_loaded": len(_telemetry_service.get_all_assets()),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }

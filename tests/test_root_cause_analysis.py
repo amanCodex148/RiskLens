@@ -9,7 +9,7 @@ Validates:
 4. Upstream & Downstream Dependency Chain Analysis.
 5. Corrective and Preventive Action (CAPA) Roadmap (Immediate 24h, Corrective 7d, Preventive 30-90d).
 6. REST API Endpoints: POST & GET /api/assistant/root-cause-analysis.
-7. ProjectKnowledgeAgent natural language inquiry routing & SQLite memory vault persistence.
+7. ProjectKnowledgeAgent natural language inquiry routing & PostgreSQL memory vault persistence.
 """
 
 import unittest
@@ -141,7 +141,7 @@ class TestRootCauseAnalysis(unittest.TestCase):
         self.assertEqual(res["data"].get("target_asset_id"), "AST-001")
         self.assertEqual(res["data"].get("five_whys_count"), 5)
 
-        # Verify SQLite conversation memory vault saved the exchange
+        # Verify PostgreSQL conversation memory vault saved the exchange
         history = self.memory_store.get_history(session_id="test_sess_rca_nl")
         self.assertGreaterEqual(len(history), 2)
         self.assertEqual(history[0]["role"], "user")

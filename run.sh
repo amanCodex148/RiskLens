@@ -7,9 +7,31 @@ cd "$DIR"
 echo "=========================================================="
 echo " Starting RiskLens Platform"
 echo " Continuous Cyber Risk Quantification & Investment Optimizer"
+echo " Backed by Enterprise PostgreSQL & Open FAIR™ Engine"
 echo "=========================================================="
 
 SKIP_TESTS=false
+
+# Default PostgreSQL Connection URL
+export DATABASE_URL="${DATABASE_URL:-postgresql://risklens:risklens_password@localhost:5432/risklens}"
+
+# Check and start local PostgreSQL container if not currently running
+if command -v docker &> /dev/null; then
+    if ! docker ps --filter "name=risklens-postgres" --filter "status=running" -q | grep -q .; then
+        if docker ps -a --filter "name=risklens-postgres" -q | grep -q .; then
+            echo "Starting existing risklens-postgres container..."
+            docker start risklens-postgres >/dev/null 2>&1 || true
+        else
+            echo "Starting risklens-postgres container on port 5432..."
+            docker run -d --name risklens-postgres \
+                -e POSTGRES_DB=risklens \
+                -e POSTGRES_USER=risklens \
+                -e POSTGRES_PASSWORD=risklens_password \
+                -p 5432:5432 \
+                postgres:16-alpine >/dev/null 2>&1 || true
+        fi
+    fi
+fi
 
 for arg in "$@"; do
     case $arg in
@@ -32,7 +54,7 @@ for arg in "$@"; do
                 source .venv/bin/activate
             fi
             export PYTHONPATH="$DIR:$PYTHONPATH"
-            echo "Running full automated test suite..."
+            echo "Running full automated test suite against PostgreSQL..."
             exec python3 -m unittest discover -s tests -p "test_*.py" -v
             ;;
         *)
@@ -53,7 +75,7 @@ fi
 export PYTHONPATH="$DIR:$PYTHONPATH"
 
 if [ "$SKIP_TESTS" = false ]; then
-    echo "Running test suite to verify mathematical models..."
+    echo "Running test suite to verify mathematical models and PostgreSQL persistence..."
     python3 -m unittest discover -s tests -p "test_*.py" -v
 else
     echo "Skipping test suite (--skip-tests active)..."
@@ -61,6 +83,7 @@ fi
 
 echo ""
 echo "Starting RiskLens server on http://localhost:8000"
+echo "Database: PostgreSQL ($DATABASE_URL)"
 echo "Press Ctrl+C to stop."
 echo "=========================================================="
 exec uvicorn backend.main:app --host 0.0.0.0 --port 8000

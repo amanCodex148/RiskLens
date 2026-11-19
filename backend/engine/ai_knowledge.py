@@ -87,7 +87,7 @@ WEB_COMPONENTS_CATALOG = {
             {
                 "name": "Security & Persistence Trust Badges",
                 "selector": "#login-page .border-t",
-                "description": "Badges confirming SQLite Persistent Credential Vault, 256-Bit Salted SHA-256 Hashing, and Open FAIR™ Certification."
+                "description": "Badges confirming PostgreSQL Enterprise Credential Vault, 256-Bit Salted SHA-256 Hashing, and Open FAIR™ Certification."
             },
             {
                 "name": "Sign In Console",
@@ -102,12 +102,12 @@ WEB_COMPONENTS_CATALOG = {
             {
                 "name": "Sign Up Console",
                 "selector": "#form-signup",
-                "description": "Registers new enterprise accounts into SQLite with executive full name, corporate email, role selection, and salted password hashing."
+                "description": "Registers new enterprise accounts into PostgreSQL with executive full name, corporate email, role selection, and salted password hashing."
             },
             {
                 "name": "Forgot & Reset Password Workflow",
                 "selector": "#auth-forgot-view",
-                "description": "Two-step account recovery: Step 1 generates a secure 6-digit verification token; Step 2 validates the token and updates the password in the SQLite vault."
+                "description": "Two-step account recovery: Step 1 generates a secure 6-digit verification token; Step 2 validates the token and updates the password in the PostgreSQL vault."
             }
         ]
     },
@@ -824,7 +824,7 @@ class ProjectKnowledgeAgent:
                 f"Here is a summary of our conversation history in this session:\n\n"
                 + "\n".join(turns_summary) +
                 f"\n\n---\n"
-                f"• **Session Memory**: Stored persistently in ACID-compliant SQLite vault.\n"
+                f"• **Session Memory**: Stored persistently in ACID-compliant PostgreSQL vault.\n"
                 f"• **Context Awareness**: Active. You can continue asking follow-up questions referencing any past topic or entity."
             )
             return {
@@ -1324,7 +1324,7 @@ class ProjectKnowledgeAgent:
                 "#### 📤 **How to Analyze Documents in RiskLens**\n"
                 "• **In Integrated AI Chat**: Click the **📎 Upload Document** icon next to the chat bar to upload any `.pdf`, `.docx`, `.csv`, or `.xlsx` file.\n"
                 "• **REST API**: Call `POST /api/assistant/document-intelligence/upload` or `POST /api/assistant/document-intelligence`.\n"
-                "• **Persistent Memory**: Document findings are stored in the active ACID SQLite chat session for continuous multi-turn analysis.\n\n"
+                "• **Persistent Memory**: Document findings are stored in the active ACID PostgreSQL chat session for continuous multi-turn analysis.\n\n"
                 "• [👉 View Asset & CVE Explorer](action:tab:assets) | [🎯 Optimize Remediation Budget](action:tab:optimizer) | [📄 Generate AI Risk Report](action:tab:boardroom)"
             )
 

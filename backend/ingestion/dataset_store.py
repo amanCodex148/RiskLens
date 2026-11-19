@@ -1,24 +1,18 @@
 """
-Persistent SQLite Storage & Deduplication Engine for Imported Enterprise Datasets.
+Persistent PostgreSQL Storage & Deduplication Engine for Imported Enterprise Datasets.
 Prevents repeated/duplicate data ingestion and persists historical datasets across reloads.
 """
 
 import os
 import re
 import json
-import sqlite3
 import hashlib
 from datetime import datetime, timezone
 from contextlib import contextmanager
 from typing import List, Dict, Any, Optional, Tuple
 
 from backend.models.schemas import Asset
-
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-DEFAULT_DB_PATH = os.environ.get(
-    "RISKLENS_DB_PATH",
-    os.path.join(PROJECT_ROOT, "data", "risklens_users.db")
-)
+from backend.db.connection import get_db_connection, init_db, get_database_url
 
 
 def compute_asset_fingerprint(assets: List[Asset]) -> str:
@@ -57,85 +51,23 @@ def compute_raw_content_hash(raw_text: str) -> str:
 
 class ImportedDatasetStore:
     """
-    ACID SQLite repository managing imported enterprise datasets.
+    ACID PostgreSQL repository managing imported enterprise datasets.
     Provides strict duplicate prevention (both content-fingerprint and name collisions)
     and persists all historical asset telemetry.
     """
 
-    def __init__(self, db_path: str = DEFAULT_DB_PATH):
-        self.db_path = db_path
-        if self.db_path != ":memory:":
-            os.makedirs(os.path.dirname(os.path.abspath(self.db_path)), exist_ok=True)
+    def __init__(self, db_url: Optional[str] = None, db_path: Optional[str] = None):
+        self.db_url = db_url or get_database_url()
+        self.db_path = db_path or self.db_url
         self._init_db()
 
     @contextmanager
     def _get_conn(self):
-        conn = sqlite3.connect(self.db_path, check_same_thread=False, timeout=10.0)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA foreign_keys = ON;")
-        conn.execute("PRAGMA journal_mode = WAL;")
-        conn.execute("PRAGMA busy_timeout = 5000;")
-        try:
+        with get_db_connection(self.db_url) as conn:
             yield conn
-            conn.commit()
-        except Exception:
-            conn.rollback()
-            raise
-        finally:
-            conn.close()
 
     def _init_db(self):
-        with self._get_conn() as conn:
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS imported_datasets (
-                    dataset_id TEXT PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    normalized_name TEXT NOT NULL COLLATE NOCASE,
-                    sector TEXT NOT NULL,
-                    content_fingerprint TEXT NOT NULL,
-                    raw_content_hash TEXT NOT NULL,
-                    format TEXT NOT NULL,
-                    asset_count INTEGER NOT NULL,
-                    total_cves INTEGER NOT NULL,
-                    recalculated_eal_inr REAL NOT NULL,
-                    recalculated_risk_score REAL NOT NULL,
-                    created_at TEXT NOT NULL,
-                    imported_by TEXT
-                );
-            """)
-            conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_imported_datasets_fingerprint 
-                ON imported_datasets(content_fingerprint);
-            """)
-            conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_imported_datasets_norm_name 
-                ON imported_datasets(normalized_name);
-            """)
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS imported_assets (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    dataset_id TEXT NOT NULL,
-                    asset_id TEXT NOT NULL,
-                    name TEXT NOT NULL,
-                    business_unit TEXT NOT NULL,
-                    criticality TEXT NOT NULL,
-                    revenue_per_hour_inr REAL NOT NULL,
-                    pii_records_count INTEGER NOT NULL,
-                    data_classification TEXT,
-                    rto_hours REAL,
-                    rpo_hours REAL,
-                    ip_or_endpoint TEXT,
-                    cloud_provider TEXT,
-                    cve_ids TEXT,
-                    raw_asset_json TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    FOREIGN KEY(dataset_id) REFERENCES imported_datasets(dataset_id) ON DELETE CASCADE
-                );
-            """)
-            conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_imported_assets_dataset 
-                ON imported_assets(dataset_id);
-            """)
+        init_db()
 
     def check_duplicate(self, fingerprint: str, name: str) -> Optional[Dict[str, Any]]:
         """
@@ -149,7 +81,7 @@ class ImportedDatasetStore:
                 """
                 SELECT dataset_id, name, sector, created_at, asset_count, total_cves
                 FROM imported_datasets
-                WHERE content_fingerprint = ?
+                WHERE content_fingerprint = %s
                 LIMIT 1
                 """,
                 (fingerprint,)
@@ -170,10 +102,10 @@ class ImportedDatasetStore:
                 """
                 SELECT dataset_id, name, sector, created_at, asset_count, total_cves
                 FROM imported_datasets
-                WHERE normalized_name = ?
+                WHERE LOWER(normalized_name) = %s OR LOWER(name) = %s
                 LIMIT 1
                 """,
-                (norm_name,)
+                (norm_name, norm_name)
             ).fetchone()
             if row_name:
                 return {
@@ -203,7 +135,7 @@ class ImportedDatasetStore:
         overwrite: bool = False
     ) -> Dict[str, Any]:
         """
-        Persists an imported dataset and its asset telemetry into the SQLite database.
+        Persists an imported dataset and its asset telemetry into the PostgreSQL database.
         If overwrite is True, replaces existing entries with the same name or fingerprint.
         """
         norm_name = name.strip().lower()
@@ -215,7 +147,7 @@ class ImportedDatasetStore:
             if overwrite:
                 # Remove prior entries matching name or fingerprint
                 conn.execute(
-                    "DELETE FROM imported_datasets WHERE normalized_name = ? OR content_fingerprint = ?",
+                    "DELETE FROM imported_datasets WHERE LOWER(normalized_name) = %s OR content_fingerprint = %s",
                     (norm_name, fingerprint)
                 )
 
@@ -226,7 +158,7 @@ class ImportedDatasetStore:
                     dataset_id, name, normalized_name, sector, content_fingerprint,
                     raw_content_hash, format, asset_count, total_cves,
                     recalculated_eal_inr, recalculated_risk_score, created_at, imported_by
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     dataset_id, name, norm_name, sector, fingerprint,
@@ -246,7 +178,7 @@ class ImportedDatasetStore:
                         revenue_per_hour_inr, pii_records_count, data_classification,
                         rto_hours, rpo_hours, ip_or_endpoint, cloud_provider,
                         cve_ids, raw_asset_json, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
                         dataset_id, a.asset_id, a.name,
@@ -270,7 +202,7 @@ class ImportedDatasetStore:
         }
 
     def list_imported_datasets(self) -> List[Dict[str, Any]]:
-        """Returns all custom datasets saved in the database, newest first."""
+        """Returns all custom datasets saved in the PostgreSQL database, newest first."""
         with self._get_conn() as conn:
             rows = conn.execute(
                 """
@@ -283,17 +215,17 @@ class ImportedDatasetStore:
             return [dict(r) for r in rows]
 
     def get_dataset(self, dataset_id: str) -> Optional[Tuple[Dict[str, Any], List[Asset]]]:
-        """Loads a saved dataset and parses its assets from SQLite."""
+        """Loads a saved dataset and parses its assets from PostgreSQL."""
         with self._get_conn() as conn:
             ds_row = conn.execute(
-                "SELECT * FROM imported_datasets WHERE dataset_id = ? OR LOWER(name) = ? LIMIT 1",
+                "SELECT * FROM imported_datasets WHERE dataset_id = %s OR LOWER(name) = %s LIMIT 1",
                 (dataset_id, dataset_id.lower())
             ).fetchone()
             if not ds_row:
                 return None
 
             asset_rows = conn.execute(
-                "SELECT raw_asset_json FROM imported_assets WHERE dataset_id = ? ORDER BY id ASC",
+                "SELECT raw_asset_json FROM imported_assets WHERE dataset_id = %s ORDER BY id ASC",
                 (ds_row["dataset_id"],)
             ).fetchall()
 
@@ -301,9 +233,9 @@ class ImportedDatasetStore:
             return dict(ds_row), assets
 
     def delete_dataset(self, dataset_id: str) -> bool:
-        """Deletes a dataset and its assets from the database."""
+        """Deletes a dataset and its assets from PostgreSQL."""
         with self._get_conn() as conn:
-            cursor = conn.execute("DELETE FROM imported_datasets WHERE dataset_id = ?", (dataset_id,))
+            cursor = conn.execute("DELETE FROM imported_datasets WHERE dataset_id = %s", (dataset_id,))
             return cursor.rowcount > 0
 
     def clear(self) -> int:
@@ -317,8 +249,8 @@ class ImportedDatasetStore:
 _dataset_store: Optional[ImportedDatasetStore] = None
 
 
-def get_dataset_store(db_path: str = DEFAULT_DB_PATH) -> ImportedDatasetStore:
+def get_dataset_store(db_path: Optional[str] = None, db_url: Optional[str] = None) -> ImportedDatasetStore:
     global _dataset_store
-    if _dataset_store is None or _dataset_store.db_path != db_path:
-        _dataset_store = ImportedDatasetStore(db_path=db_path)
+    if _dataset_store is None:
+        _dataset_store = ImportedDatasetStore(db_url=db_url, db_path=db_path)
     return _dataset_store

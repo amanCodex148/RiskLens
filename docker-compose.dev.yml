@@ -15,7 +15,14 @@ services:
       - ./frontend:/app/frontend
       - ./tests:/app/tests
       - ./data:/app/data
+      - ./scripts:/app/scripts
     environment:
       - PORT=8000
       - HOST=0.0.0.0
       - DEBUG=1
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-risklens}:${POSTGRES_PASSWORD:-risklens_password}@postgres:5432/${POSTGRES_DB:-risklens}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-risklens}
+      - POSTGRES_USER=${POSTGRES_USER:-risklens}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-risklens_password}

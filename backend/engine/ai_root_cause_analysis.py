@@ -100,7 +100,7 @@ class AiRootCauseAnalysisEngine:
             "Rank our enterprise risks based on severity, business impact, urgency and existing controls"
         ]
 
-        # 4. Save to SQLite Chat Memory Vault
+        # 4. Save to PostgreSQL Chat Memory Vault
         if session_id:
             try:
                 mem_store = get_memory_store()

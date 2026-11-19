@@ -56,7 +56,7 @@ Furthermore, RiskLens includes a **Mixed-Integer Linear Programming (MILP) Inves
   - Exhaustive intelligence on **how RiskLens works**, mathematical models (Open FAIR™, 10k Monte Carlo, Beta-PERT, Poisson, 0-1 Knapsack MILP), and **every single dashboard and web component** on the main page.
   - **Autonomous Tool & Action Execution**: AI responses include 1-click execution buttons that directly apply budgets to the optimizer slider (`action:set_budget`), trigger What-If scenario simulations (`action:run_scenario`), load industry datasets (`action:load_dataset`), switch platform currency (`action:set_currency`), and export dossiers (`action:export_dossier`).
   - **Dynamic Quantitative Computational Advisor**: Real-time 0-1 Knapsack solver computing funded controls, spent capital, $\Delta$EAL risk reduction, and portfolio ROSI for arbitrary user-specified budgets.
-  - **Persistent ACID Multi-Turn Memory**: SQLite-backed conversational vault (`ai_chat_memory`, `ai_user_preferences`) remembering old chats across sessions, resolving pronoun anaphora ("its downtime cost", "its top CVE"), and personalizing advice based on learned user roles (CISO, CRO) and compliance focuses.
+  - **Persistent ACID Multi-Turn Memory**: PostgreSQL-backed conversational vault (`ai_chat_memory`, `ai_user_preferences`) remembering old chats across sessions, resolving pronoun anaphora ("its downtime cost", "its top CVE"), and personalizing advice based on learned user roles (CISO, CRO) and compliance focuses.
   - **Active Tab-Aware Contextual Intelligence**: Automatically adapts prompt suggestion pills to the active view (Boardroom, Optimizer, Scenarios, Compliance, Assets).
   - **Executive Briefing Export & 1-Click Clipboard**: Instant markdown copy button on all responses and downloadable executive markdown audit briefings.
   - Generative LLM integration (Google Gemini / OpenAI) with seamless zero-dependency local deterministic fallback.
@@ -257,8 +257,12 @@ Project Anti/
 │   │   ├── optimizer.py         # Fast 0-1 Knapsack DP Optimizer & Efficient Frontier
 │   │   ├── ai_decision.py       # What-If Simulator & NL Query Copilot
 │   │   └── compliance.py        # Framework crosswalk (ISO, NIST, CIS, RBI, SEBI)
+│   ├── db/
+│   │   ├── __init__.py          # Database package exports
+│   │   └── connection.py        # PostgreSQL connection pool & schema manager
 │   ├── ingestion/
 │   │   ├── telemetry_loader.py  # Telemetry aggregator & 12 enterprise assets
+│   │   ├── dataset_store.py     # PostgreSQL imported dataset repository
 │   │   └── industry_datasets.py # 20 pre-configured enterprise vertical datasets
 │   ├── models/
 │   │   └── schemas.py           # Pydantic validation schemas & data models
@@ -272,13 +276,15 @@ Project Anti/
 │   ├── test_auth.py             # Authentication and security test suite
 │   ├── test_data_exchange.py    # CSV/JSON import/export tests
 │   └── test_industry_datasets.py# 20 Industry datasets validation tests
+├── scripts/
+│   └── migrate_sqlite_to_postgres.py # SQLite to PostgreSQL automated data migration
 ├── data/
-│   └── risklens_users.db        # ACID-compliant SQLite user and credentials store
+│   └── custom_assets.json       # Active custom telemetry storage
 ├── Dockerfile                   # Multi-stage, secure non-root container definition
-├── docker-compose.yml           # Production Docker Compose orchestration
+├── docker-compose.yml           # Production Docker Compose orchestration (PostgreSQL + RiskLens)
 ├── docker-compose.dev.yml       # Development Compose override with live reload
 ├── .dockerignore                # Container build context filter
-├── requirements.txt             # Pinned production Python dependencies
+├── requirements.txt             # Pinned production Python dependencies (including psycopg)
 ├── run.sh                       # Universal launch script (native & docker runner)
 └── README.md                    # Technical platform documentation
 ```

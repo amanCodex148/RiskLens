@@ -296,7 +296,7 @@ class TestDataExchange(unittest.TestCase):
         self.assertEqual(r2.json()["status"], "success")
 
     def test_persistent_database_storage_and_activation(self):
-        """Verifies imported datasets are persisted to SQLite database and can be activated or deleted."""
+        """Verifies imported datasets are persisted to PostgreSQL database and can be activated or deleted."""
         csv_payload = (
             "asset_id,name,business_unit,criticality,revenue_per_hour_inr,pii_records_count\n"
             "STORE-01,Cloud Ledger,Corporate,Tier 1 - Crown Jewel,3000000,100000\n"

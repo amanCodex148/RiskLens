@@ -1,6 +1,6 @@
 """
 Persistent Conversation Memory Store for RiskLens AI Copilot.
-Stores multi-turn conversational history in SQLite so the AI remembers:
+Stores multi-turn conversational history in PostgreSQL so the AI remembers:
 1. Past questions and answers across sessions.
 2. Contextual entities (e.g., previously discussed assets, CVEs, budgets, scenarios).
 3. Provides multi-turn context resolution and history management endpoints.
@@ -8,88 +8,32 @@ Stores multi-turn conversational history in SQLite so the AI remembers:
 
 import os
 import re
-import sqlite3
 import json
 import secrets
 from datetime import datetime, timezone
 from contextlib import contextmanager
 from typing import List, Dict, Any, Optional
 
-DEFAULT_DB_PATH = os.environ.get(
-    "RISKLENS_DB_PATH",
-    os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "..", "data", "risklens_users.db")
-    )
-)
+from backend.db.connection import get_db_connection, init_db, get_database_url
 
 
 class ChatMemoryStore:
     """
-    ACID-compliant persistent memory vault for the RiskLens AI Copilot.
+    ACID-compliant persistent PostgreSQL memory vault for the RiskLens AI Copilot.
     """
 
-    def __init__(self, db_path: str = DEFAULT_DB_PATH):
-        self.db_path = db_path
-        self._mem_conn = None
-        if self.db_path == ":memory:":
-            self._mem_conn = sqlite3.connect(":memory:", check_same_thread=False)
-            self._mem_conn.row_factory = sqlite3.Row
-        else:
-            os.makedirs(os.path.dirname(os.path.abspath(self.db_path)), exist_ok=True)
+    def __init__(self, db_path: Optional[str] = None, db_url: Optional[str] = None):
+        self.db_url = db_url or get_database_url()
+        self.db_path = db_path or self.db_url
         self._init_db()
 
     @contextmanager
     def _get_conn(self):
-        if self._mem_conn is not None:
-            try:
-                yield self._mem_conn
-                self._mem_conn.commit()
-            except Exception:
-                self._mem_conn.rollback()
-                raise
-        else:
-            conn = sqlite3.connect(self.db_path, check_same_thread=False, timeout=10.0)
-            conn.row_factory = sqlite3.Row
-            conn.execute("PRAGMA foreign_keys = ON;")
-            conn.execute("PRAGMA journal_mode = WAL;")
-            conn.execute("PRAGMA busy_timeout = 5000;")
-            try:
-                yield conn
-                conn.commit()
-            except Exception:
-                conn.rollback()
-                raise
-            finally:
-                conn.close()
+        with get_db_connection(self.db_url) as conn:
+            yield conn
 
     def _init_db(self):
-        with self._get_conn() as conn:
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS ai_chat_memory (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    session_id TEXT NOT NULL,
-                    user_email TEXT COLLATE NOCASE,
-                    role TEXT NOT NULL,
-                    content TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    metadata_json TEXT
-                );
-            """)
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS ai_user_preferences (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    session_id TEXT NOT NULL,
-                    user_email TEXT COLLATE NOCASE,
-                    pref_key TEXT NOT NULL,
-                    pref_value TEXT NOT NULL,
-                    updated_at TEXT NOT NULL,
-                    UNIQUE(session_id, pref_key)
-                );
-            """)
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_ai_mem_session ON ai_chat_memory(session_id);")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_ai_mem_user ON ai_chat_memory(user_email);")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_ai_pref_session ON ai_user_preferences(session_id);")
-            conn.commit()
+        init_db()
 
     def set_preference(
         self,
@@ -104,11 +48,11 @@ class ChatMemoryStore:
         with self._get_conn() as conn:
             conn.execute("""
                 INSERT INTO ai_user_preferences (session_id, user_email, pref_key, pref_value, updated_at)
-                VALUES (?, ?, ?, ?, ?)
+                VALUES (%s, %s, %s, %s, %s)
                 ON CONFLICT(session_id, pref_key) DO UPDATE SET
-                    pref_value = excluded.pref_value,
-                    user_email = COALESCE(excluded.user_email, ai_user_preferences.user_email),
-                    updated_at = excluded.updated_at;
+                    pref_value = EXCLUDED.pref_value,
+                    user_email = COALESCE(EXCLUDED.user_email, ai_user_preferences.user_email),
+                    updated_at = EXCLUDED.updated_at;
             """, (session_id, email_clean, pref_key, pref_value, now_iso))
 
     def get_preferences(
@@ -123,13 +67,13 @@ class ChatMemoryStore:
             if email_clean and session_id:
                 rows = conn.execute("""
                     SELECT pref_key, pref_value FROM ai_user_preferences
-                    WHERE user_email = ? OR session_id = ?
+                    WHERE LOWER(user_email) = %s OR session_id = %s
                     ORDER BY id ASC
                 """, (email_clean, session_id)).fetchall()
             elif email_clean:
-                rows = conn.execute("SELECT pref_key, pref_value FROM ai_user_preferences WHERE user_email = ?", (email_clean,)).fetchall()
+                rows = conn.execute("SELECT pref_key, pref_value FROM ai_user_preferences WHERE LOWER(user_email) = %s", (email_clean,)).fetchall()
             elif session_id:
-                rows = conn.execute("SELECT pref_key, pref_value FROM ai_user_preferences WHERE session_id = ?", (session_id,)).fetchall()
+                rows = conn.execute("SELECT pref_key, pref_value FROM ai_user_preferences WHERE session_id = %s", (session_id,)).fetchall()
             else:
                 return {}
 
@@ -184,7 +128,7 @@ class ChatMemoryStore:
         user_email: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None
     ) -> int:
-        """Saves a conversation turn (user or assistant) to persistent SQLite memory, preventing duplicate echos."""
+        """Saves a conversation turn (user or assistant) to persistent PostgreSQL memory, preventing duplicate echos."""
         now_iso = datetime.now(timezone.utc).isoformat()
         meta_str = json.dumps(metadata) if metadata else None
         email_clean = user_email.strip().lower() if user_email else None
@@ -193,7 +137,7 @@ class ChatMemoryStore:
             # Deduplicate consecutive turns with same role (e.g. sub-agent delegation echo)
             last = conn.execute("""
                 SELECT id, role, content FROM ai_chat_memory
-                WHERE session_id = ? ORDER BY id DESC LIMIT 1
+                WHERE session_id = %s ORDER BY id DESC LIMIT 1
             """, (session_id,)).fetchone()
 
             if last and last["role"] == role:
@@ -203,20 +147,13 @@ class ChatMemoryStore:
                 if last["content"] == content or content.startswith(last["content"]) or last["content"].startswith(content):
                     return last["id"]
 
-            cursor = conn.execute("""
+            cur = conn.execute("""
                 INSERT INTO ai_chat_memory (session_id, user_email, role, content, created_at, metadata_json)
-                VALUES (?, ?, ?, ?, ?, ?)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING id
             """, (session_id, email_clean, role, content, now_iso, meta_str))
-            return cursor.lastrowid
-
-    def close(self):
-        """Closes any persistent or in-memory SQLite connection."""
-        if self._mem_conn is not None:
-            try:
-                self._mem_conn.close()
-            except Exception:
-                pass
-            self._mem_conn = None
+            row = cur.fetchone()
+            return row["id"] if row else 1
 
     def get_history(
         self,
@@ -234,25 +171,25 @@ class ChatMemoryStore:
                 rows = conn.execute("""
                     SELECT id, session_id, user_email, role, content, created_at, metadata_json
                     FROM ai_chat_memory
-                    WHERE user_email = ? OR session_id = ?
+                    WHERE LOWER(user_email) = %s OR session_id = %s
                     ORDER BY id DESC
-                    LIMIT ?
+                    LIMIT %s
                 """, (email_clean, session_id, limit)).fetchall()
             elif email_clean:
                 rows = conn.execute("""
                     SELECT id, session_id, user_email, role, content, created_at, metadata_json
                     FROM ai_chat_memory
-                    WHERE user_email = ?
+                    WHERE LOWER(user_email) = %s
                     ORDER BY id DESC
-                    LIMIT ?
+                    LIMIT %s
                 """, (email_clean, limit)).fetchall()
             elif session_id:
                 rows = conn.execute("""
                     SELECT id, session_id, user_email, role, content, created_at, metadata_json
                     FROM ai_chat_memory
-                    WHERE session_id = ?
+                    WHERE session_id = %s
                     ORDER BY id DESC
-                    LIMIT ?
+                    LIMIT %s
                 """, (session_id, limit)).fetchall()
             else:
                 return []
@@ -295,16 +232,16 @@ class ChatMemoryStore:
         with self._get_conn() as conn:
             if email_clean and session_id:
                 cursor = conn.execute(
-                    "DELETE FROM ai_chat_memory WHERE user_email = ? OR session_id = ?",
+                    "DELETE FROM ai_chat_memory WHERE LOWER(user_email) = %s OR session_id = %s",
                     (email_clean, session_id)
                 )
-                conn.execute("DELETE FROM ai_user_preferences WHERE user_email = ? OR session_id = ?", (email_clean, session_id))
+                conn.execute("DELETE FROM ai_user_preferences WHERE LOWER(user_email) = %s OR session_id = %s", (email_clean, session_id))
             elif email_clean:
-                cursor = conn.execute("DELETE FROM ai_chat_memory WHERE user_email = ?", (email_clean,))
-                conn.execute("DELETE FROM ai_user_preferences WHERE user_email = ?", (email_clean,))
+                cursor = conn.execute("DELETE FROM ai_chat_memory WHERE LOWER(user_email) = %s", (email_clean,))
+                conn.execute("DELETE FROM ai_user_preferences WHERE LOWER(user_email) = %s", (email_clean,))
             elif session_id:
-                cursor = conn.execute("DELETE FROM ai_chat_memory WHERE session_id = ?", (session_id,))
-                conn.execute("DELETE FROM ai_user_preferences WHERE session_id = ?", (session_id,))
+                cursor = conn.execute("DELETE FROM ai_chat_memory WHERE session_id = %s", (session_id,))
+                conn.execute("DELETE FROM ai_user_preferences WHERE session_id = %s", (session_id,))
             else:
                 return 0
             return cursor.rowcount
@@ -334,13 +271,8 @@ class ChatMemoryStore:
         return "\n".join(summary_lines)
 
     def close(self):
-        """Closes any persistent in-memory database connections to release resources cleanly."""
-        if self._mem_conn is not None:
-            try:
-                self._mem_conn.close()
-            except Exception:
-                pass
-            self._mem_conn = None
+        """Releases any local connection resources cleanly."""
+        pass
 
     def __del__(self):
         self.close()
@@ -350,8 +282,8 @@ class ChatMemoryStore:
 _memory_store: Optional[ChatMemoryStore] = None
 
 
-def get_memory_store(db_path: str = DEFAULT_DB_PATH) -> ChatMemoryStore:
+def get_memory_store(db_path: Optional[str] = None, db_url: Optional[str] = None) -> ChatMemoryStore:
     global _memory_store
-    if _memory_store is None or _memory_store.db_path != db_path:
-        _memory_store = ChatMemoryStore(db_path=db_path)
+    if _memory_store is None:
+        _memory_store = ChatMemoryStore(db_url=db_url, db_path=db_path)
     return _memory_store

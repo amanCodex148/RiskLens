@@ -10,7 +10,7 @@ Validates:
 3. Automated Gap & Audit Finding Detection.
 4. Statutory Penalty Quantification (DPDP Act up to ₹250 Cr, SEBI 6h reporting, RBI 35A).
 5. REST API Endpoints: POST & GET /api/assistant/compliance-mapping.
-6. ProjectKnowledgeAgent natural language inquiry routing & SQLite memory vault persistence.
+6. ProjectKnowledgeAgent natural language inquiry routing & PostgreSQL memory vault persistence.
 """
 
 import unittest

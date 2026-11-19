@@ -12,7 +12,7 @@ Validates:
 3. Resilience & Single Points of Failure (SPOF) assessment.
 4. 3-Phase Incident Containment & Hardening Directives.
 5. REST API endpoint: POST /api/assistant/scenario-analysis.
-6. ProjectKnowledgeAgent natural language inquiry routing & SQLite memory persistence.
+6. ProjectKnowledgeAgent natural language inquiry routing & PostgreSQL memory persistence.
 """
 
 import unittest
@@ -144,7 +144,7 @@ class TestScenarioAnalysis(unittest.TestCase):
         self.assertEqual(res["data"].get("target_asset_id"), "AST-001")
         self.assertGreater(res["data"].get("direct_downtime_loss_inr", 0), 0)
 
-        # Verify SQLite conversation memory vault persisted the exchange
+        # Verify PostgreSQL conversation memory vault persisted the exchange
         history = self.memory_store.get_history(session_id="test_sess_scenario_nl")
         self.assertGreaterEqual(len(history), 2)
         self.assertEqual(history[0]["role"], "user")

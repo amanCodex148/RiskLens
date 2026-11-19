@@ -240,7 +240,7 @@
                     <div class="flex flex-wrap items-center gap-3 pt-3 text-[11px] text-zinc-400 border-t border-[#1a1a1d]">
                         <div class="flex items-center space-x-1.5">
                             <i data-lucide="database" class="w-3.5 h-3.5 text-indigo-400"></i>
-                            <span>SQLite Persistent Credential Vault</span>
+                            <span>PostgreSQL Enterprise Credential Vault</span>
                         </div>
                         <span class="text-zinc-600">•</span>
                         <div class="flex items-center space-x-1.5">
@@ -361,7 +361,7 @@
                                     <input type="checkbox" id="signin-remember" checked class="rounded border-zinc-700 bg-zinc-900 text-indigo-600 focus:ring-0">
                                     <span>Remember session</span>
                                 </label>
-                                <span class="text-[11px] text-zinc-500 font-mono">SQLite Vault Storage</span>
+                                <span class="text-[11px] text-zinc-500 font-mono">PostgreSQL Vault Storage</span>
                             </div>
 
                             <button type="submit" id="signin-submit-btn" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-semibold text-xs shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 transition border border-indigo-400/30">
@@ -392,7 +392,7 @@
                             </div>
                         </form>
 
-                        <!-- 2. SIGN UP VIEW (PERSISTS TO SQLITE) -->
+                        <!-- 2. SIGN UP VIEW (PERSISTS TO POSTGRESQL) -->
                         <form id="form-signup" onsubmit="handleSignUpSubmit(event); return false;" class="hidden space-y-3.5" autocomplete="off">
                             <!-- Decoy fields to capture browser password manager auto-fill -->
                             <input type="text" style="display:none;" aria-hidden="true" tabindex="-1" autocomplete="username">
@@ -540,7 +540,7 @@
         <!-- Login Page Footer -->
         <footer class="py-4 px-4 sm:px-8 border-t border-[#18181b] text-center text-xs text-zinc-500 flex flex-col sm:flex-row items-center justify-between max-w-7xl mx-auto w-full">
             <span>© 2026 RiskLens Systems. Certified Open FAIR™ Continuous Cyber Risk Quantification Platform.</span>
-            <span class="mt-1 sm:mt-0 font-mono text-[11px] text-zinc-400">Persistent SQLite Vault • RBI CSF & SEBI CSCRF Ready</span>
+            <span class="mt-1 sm:mt-0 font-mono text-[11px] text-zinc-400">Persistent PostgreSQL Vault • RBI CSF & SEBI CSCRF Ready</span>
         </footer>
     </div>
 
@@ -1496,7 +1496,7 @@
                         <div class="flex items-center flex-wrap gap-1.5">
                             <span id="copilot-modal-title" class="text-sm sm:text-base font-bold text-white tracking-tight truncate">RiskLens Integrated AI Assistant</span>
                             <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 font-bold uppercase tracking-wider hidden xs:inline-block">PROJECT KNOWLEDGE AGENT</span>
-                            <span id="copilot-memory-badge" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30 flex items-center space-x-1" title="ACID SQLite Chat Memory Vault Active">
+                            <span id="copilot-memory-badge" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30 flex items-center space-x-1" title="ACID PostgreSQL Chat Memory Vault Active">
                                 <i data-lucide="brain" class="w-3 h-3 text-purple-400"></i>
                                 <span id="copilot-memory-text">Memory Active</span>
                             </span>

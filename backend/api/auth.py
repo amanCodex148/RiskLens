@@ -1,12 +1,11 @@
 """
-Persistent Authentication & User Management Module for RiskLens.
+Enterprise PostgreSQL Authentication & User Management Module for RiskLens.
 Provides Sign In, Sign Up, Forgot Password, and Session Management.
-Uses salted SHA-256 cryptographic hashing and persists all credentials,
-sessions, and tokens into an ACID-compliant SQLite database.
+Uses salted SHA-256 / PBKDF2 cryptographic hashing and persists all credentials,
+sessions, and tokens into an ACID-compliant PostgreSQL database.
 """
 
 import os
-import sqlite3
 import re
 import hashlib
 import secrets
@@ -17,16 +16,11 @@ from typing import Dict, Optional, Any, List
 from pydantic import BaseModel, Field, field_validator
 from fastapi import APIRouter, HTTPException, Header, Depends
 
+from backend.db.connection import get_db_connection, init_db, get_database_url
+
 logger = logging.getLogger("risklens.auth")
 
 auth_router = APIRouter(prefix="/auth", tags=["Authentication"])
-
-# Project storage directory for persistent SQLite database
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-DEFAULT_DB_PATH = os.environ.get(
-    "RISKLENS_DB_PATH",
-    os.path.join(PROJECT_ROOT, "data", "risklens_users.db")
-)
 
 EMAIL_REGEX = re.compile(r"^[\w\.-]+@[\w\.-]+\.\w+$")
 
@@ -120,71 +114,27 @@ def _hash_password(password: str, salt: str) -> str:
     ).hex()
 
 
-# --- Persistent SQLite Auth Store ---
+# --- Enterprise PostgreSQL Auth Store ---
 
-class SqliteAuthStore:
+class PostgresAuthStore:
     """
-    Persistent SQLite storage engine for user accounts, credentials, sessions, and recovery tokens.
-    Guarantees user credentials persist on disk across server reloads and restarts.
+    Persistent PostgreSQL storage engine for user accounts, credentials, sessions, and recovery tokens.
+    Guarantees user credentials and sessions persist in PostgreSQL across server reloads and restarts.
     """
 
-    def __init__(self, db_path: str = DEFAULT_DB_PATH):
-        self.db_path = db_path
-        if self.db_path != ":memory:":
-            os.makedirs(os.path.dirname(os.path.abspath(self.db_path)), exist_ok=True)
+    def __init__(self, db_url: Optional[str] = None, db_path: Optional[str] = None):
+        self.db_url = db_url or get_database_url()
+        self.db_path = db_path or self.db_url
         self._init_db()
         self._seed_default_users()
 
     @contextmanager
     def _get_conn(self):
-        conn = sqlite3.connect(self.db_path, check_same_thread=False, timeout=10.0)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA foreign_keys = ON;")
-        conn.execute("PRAGMA journal_mode = WAL;")
-        conn.execute("PRAGMA busy_timeout = 5000;")
-        try:
+        with get_db_connection(self.db_url) as conn:
             yield conn
-            conn.commit()
-        except Exception:
-            conn.rollback()
-            raise
-        finally:
-            conn.close()
 
     def _init_db(self):
-        with self._get_conn() as conn:
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS users (
-                    email TEXT PRIMARY KEY COLLATE NOCASE,
-                    user_id TEXT UNIQUE NOT NULL,
-                    full_name TEXT NOT NULL,
-                    organization TEXT NOT NULL,
-                    role TEXT NOT NULL,
-                    salt TEXT NOT NULL,
-                    hashed_password TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    last_login_at TEXT
-                );
-            """)
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS sessions (
-                    token TEXT PRIMARY KEY,
-                    email TEXT NOT NULL COLLATE NOCASE,
-                    created_at TEXT NOT NULL,
-                    FOREIGN KEY(email) REFERENCES users(email) ON DELETE CASCADE
-                );
-            """)
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS reset_tokens (
-                    token TEXT PRIMARY KEY,
-                    email TEXT NOT NULL COLLATE NOCASE,
-                    created_at TEXT NOT NULL,
-                    FOREIGN KEY(email) REFERENCES users(email) ON DELETE CASCADE
-                );
-            """)
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_sessions_email ON sessions(email);")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_reset_email ON reset_tokens(email);")
-            conn.commit()
+        init_db()
 
     def _seed_default_users(self):
         # In production environments, skip seeding known default demo accounts unless explicitly opted-in
@@ -221,14 +171,14 @@ class SqliteAuthStore:
         with self._get_conn() as conn:
             for acc in default_accounts:
                 email = acc["email"].lower()
-                row = conn.execute("SELECT email FROM users WHERE email = ?", (email,)).fetchone()
+                row = conn.execute("SELECT email FROM users WHERE LOWER(email) = %s", (email,)).fetchone()
                 if not row:
                     salt = secrets.token_hex(16)
                     hashed_pw = _hash_password(acc["password"], salt)
                     user_id = f"USR-{secrets.token_hex(4).upper()}"
                     conn.execute("""
                         INSERT INTO users (email, user_id, full_name, organization, role, salt, hashed_password, created_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     """, (
                         email,
                         user_id,
@@ -239,7 +189,6 @@ class SqliteAuthStore:
                         hashed_pw,
                         "2026-01-15T10:00:00Z"
                     ))
-            conn.commit()
 
     def reset_demo_accounts(self):
         """Resets the demo accounts back to their baseline passwords for idempotent testing."""
@@ -274,10 +223,10 @@ class SqliteAuthStore:
                 hashed_pw = _hash_password(acc["password"], salt)
                 conn.execute("""
                     INSERT INTO users (email, user_id, full_name, organization, role, salt, hashed_password, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     ON CONFLICT(email) DO UPDATE SET
-                        salt = excluded.salt,
-                        hashed_password = excluded.hashed_password
+                        salt = EXCLUDED.salt,
+                        hashed_password = EXCLUDED.hashed_password
                 """, (
                     email,
                     f"USR-{secrets.token_hex(4).upper()}",
@@ -288,12 +237,11 @@ class SqliteAuthStore:
                     hashed_pw,
                     "2026-01-15T10:00:00Z"
                 ))
-            conn.commit()
 
     def register_user(self, req: UserSignUpRequest) -> UserProfile:
         email = req.email.lower().strip()
         with self._get_conn() as conn:
-            existing = conn.execute("SELECT email FROM users WHERE email = ?", (email,)).fetchone()
+            existing = conn.execute("SELECT email FROM users WHERE LOWER(email) = %s", (email,)).fetchone()
             if existing:
                 raise HTTPException(status_code=400, detail="Account with this corporate email already exists.")
 
@@ -304,7 +252,7 @@ class SqliteAuthStore:
 
             conn.execute("""
                 INSERT INTO users (email, user_id, full_name, organization, role, salt, hashed_password, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 email,
                 user_id,
@@ -315,7 +263,6 @@ class SqliteAuthStore:
                 hashed_pw,
                 created_at
             ))
-            conn.commit()
 
         return UserProfile(
             user_id=user_id,
@@ -330,12 +277,17 @@ class SqliteAuthStore:
         token = f"risklens_sec_{secrets.token_urlsafe(32)}"
         now_iso = datetime.now(timezone.utc).isoformat()
         with self._get_conn() as conn:
-            conn.execute("INSERT OR REPLACE INTO sessions (token, email, created_at) VALUES (?, ?, ?)", (
+            conn.execute("""
+                INSERT INTO sessions (token, email, created_at)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (token) DO UPDATE SET
+                    email = EXCLUDED.email,
+                    created_at = EXCLUDED.created_at
+            """, (
                 token,
                 email.lower().strip(),
                 now_iso
             ))
-            conn.commit()
         return token
 
     _failed_attempts: Dict[str, List[datetime]] = {}
@@ -378,7 +330,7 @@ class SqliteAuthStore:
             )
 
         with self._get_conn() as conn:
-            user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+            user = conn.execute("SELECT * FROM users WHERE LOWER(email) = %s", (email,)).fetchone()
             if not user:
                 self._failed_attempts.setdefault(email, []).append(now)
                 raise HTTPException(status_code=401, detail="Invalid corporate credentials. Check email or password.")
@@ -391,8 +343,7 @@ class SqliteAuthStore:
                     # Upgrade to PBKDF2 automatically
                     new_salt = secrets.token_hex(16)
                     new_pw_hash = _hash_password(password, new_salt)
-                    conn.execute("UPDATE users SET salt = ?, hashed_password = ? WHERE email = ?", (new_salt, new_pw_hash, email))
-                    conn.commit()
+                    conn.execute("UPDATE users SET salt = %s, hashed_password = %s WHERE email = %s", (new_salt, new_pw_hash, email))
                 else:
                     self._failed_attempts.setdefault(email, []).append(now)
                     raise HTTPException(status_code=401, detail="Invalid corporate credentials. Check email or password.")
@@ -401,13 +352,18 @@ class SqliteAuthStore:
             self._failed_attempts.pop(email, None)
 
             token = f"risklens_sec_{secrets.token_urlsafe(32)}"
-            conn.execute("INSERT OR REPLACE INTO sessions (token, email, created_at) VALUES (?, ?, ?)", (
+            conn.execute("""
+                INSERT INTO sessions (token, email, created_at)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (token) DO UPDATE SET
+                    email = EXCLUDED.email,
+                    created_at = EXCLUDED.created_at
+            """, (
                 token,
                 email,
                 now_iso
             ))
-            conn.execute("UPDATE users SET last_login_at = ? WHERE email = ?", (now_iso, email))
-            conn.commit()
+            conn.execute("UPDATE users SET last_login_at = %s WHERE email = %s", (now_iso, email))
 
             profile = UserProfile(
                 user_id=user["user_id"],
@@ -422,7 +378,7 @@ class SqliteAuthStore:
     def change_password(self, email: str, current_password: str, new_password: str) -> bool:
         email = email.lower().strip()
         with self._get_conn() as conn:
-            user = conn.execute("SELECT salt, hashed_password FROM users WHERE email = ?", (email,)).fetchone()
+            user = conn.execute("SELECT salt, hashed_password FROM users WHERE LOWER(email) = %s", (email,)).fetchone()
             if not user:
                 raise HTTPException(status_code=404, detail="User account not found.")
 
@@ -432,28 +388,32 @@ class SqliteAuthStore:
 
             new_salt = secrets.token_hex(16)
             new_hash = _hash_password(new_password, new_salt)
-            conn.execute("UPDATE users SET salt = ?, hashed_password = ? WHERE email = ?", (new_salt, new_hash, email))
-            conn.commit()
+            conn.execute("UPDATE users SET salt = %s, hashed_password = %s WHERE LOWER(email) = %s", (new_salt, new_hash, email))
             return True
 
     def create_reset_token(self, email: str) -> str:
         email = email.lower().strip()
         now_iso = datetime.now(timezone.utc).isoformat()
         with self._get_conn() as conn:
-            user = conn.execute("SELECT email FROM users WHERE email = ?", (email,)).fetchone()
+            user = conn.execute("SELECT email FROM users WHERE LOWER(email) = %s", (email,)).fetchone()
             if not user:
                 raise HTTPException(status_code=404, detail="No registered account found with this corporate email.")
 
             # Invalidate any previously active tokens for this user before issuing a new one
-            conn.execute("DELETE FROM reset_tokens WHERE email = ?", (email,))
+            conn.execute("DELETE FROM reset_tokens WHERE LOWER(email) = %s", (email,))
 
             token = secrets.token_hex(6).upper()  # 12-char friendly OTP
-            conn.execute("INSERT OR REPLACE INTO reset_tokens (token, email, created_at) VALUES (?, ?, ?)", (
+            conn.execute("""
+                INSERT INTO reset_tokens (token, email, created_at)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (token) DO UPDATE SET
+                    email = EXCLUDED.email,
+                    created_at = EXCLUDED.created_at
+            """, (
                 token,
                 email,
                 now_iso
             ))
-            conn.commit()
             return token
 
     def reset_password(self, email: str, token: str, new_password: str) -> bool:
@@ -461,7 +421,7 @@ class SqliteAuthStore:
         token = token.strip().upper()
 
         with self._get_conn() as conn:
-            rec = conn.execute("SELECT email, created_at FROM reset_tokens WHERE token = ? AND email = ?", (token, email)).fetchone()
+            rec = conn.execute("SELECT email, created_at FROM reset_tokens WHERE token = %s AND LOWER(email) = %s", (token, email)).fetchone()
             if not rec:
                 raise HTTPException(status_code=400, detail="Invalid or expired password reset token.")
 
@@ -471,25 +431,22 @@ class SqliteAuthStore:
                 if token_time.tzinfo is None:
                     token_time = token_time.replace(tzinfo=timezone.utc)
                 if datetime.now(timezone.utc) - token_time > timedelta(minutes=15):
-                    conn.execute("DELETE FROM reset_tokens WHERE token = ?", (token,))
-                    conn.commit()
+                    conn.execute("DELETE FROM reset_tokens WHERE token = %s", (token,))
                     raise HTTPException(status_code=400, detail="Password reset token has expired. Please request a new token.")
             except (ValueError, TypeError):
-                conn.execute("DELETE FROM reset_tokens WHERE token = ?", (token,))
-                conn.commit()
+                conn.execute("DELETE FROM reset_tokens WHERE token = %s", (token,))
                 raise HTTPException(status_code=400, detail="Invalid password reset token format or corrupted timestamp.")
 
-            user = conn.execute("SELECT email FROM users WHERE email = ?", (email,)).fetchone()
+            user = conn.execute("SELECT email FROM users WHERE LOWER(email) = %s", (email,)).fetchone()
             if not user:
                 raise HTTPException(status_code=404, detail="User not found.")
 
             new_salt = secrets.token_hex(16)
             new_hash = _hash_password(new_password, new_salt)
-            conn.execute("UPDATE users SET salt = ?, hashed_password = ? WHERE email = ?", (new_salt, new_hash, email))
+            conn.execute("UPDATE users SET salt = %s, hashed_password = %s WHERE LOWER(email) = %s", (new_salt, new_hash, email))
             # Delete all reset tokens for this user upon successful password update
-            conn.execute("DELETE FROM reset_tokens WHERE email = ?", (email,))
-            conn.execute("DELETE FROM sessions WHERE email = ?", (email,))
-            conn.commit()
+            conn.execute("DELETE FROM reset_tokens WHERE LOWER(email) = %s", (email,))
+            conn.execute("DELETE FROM sessions WHERE LOWER(email) = %s", (email,))
             return True
 
     def get_user_by_token(self, token: str) -> Optional[UserProfile]:
@@ -497,8 +454,8 @@ class SqliteAuthStore:
             row = conn.execute("""
                 SELECT u.user_id, u.full_name, u.email, u.organization, u.role, u.created_at, s.created_at AS session_created_at
                 FROM sessions s
-                JOIN users u ON s.email = u.email
-                WHERE s.token = ?
+                JOIN users u ON LOWER(s.email) = LOWER(u.email)
+                WHERE s.token = %s
             """, (token,)).fetchone()
 
             if not row:
@@ -510,12 +467,10 @@ class SqliteAuthStore:
                 if session_time.tzinfo is None:
                     session_time = session_time.replace(tzinfo=timezone.utc)
                 if datetime.now(timezone.utc) - session_time > timedelta(days=7):
-                    conn.execute("DELETE FROM sessions WHERE token = ?", (token,))
-                    conn.commit()
+                    conn.execute("DELETE FROM sessions WHERE token = %s", (token,))
                     return None
             except (ValueError, TypeError):
-                conn.execute("DELETE FROM sessions WHERE token = ?", (token,))
-                conn.commit()
+                conn.execute("DELETE FROM sessions WHERE token = %s", (token,))
                 return None
 
             return UserProfile(
@@ -527,10 +482,29 @@ class SqliteAuthStore:
                 created_at=row["created_at"]
             )
 
+    def get_user_by_email(self, email: str) -> Optional[UserProfile]:
+        """Retrieves user profile by corporate email."""
+        clean = email.strip().lower()
+        with self._get_conn() as conn:
+            row = conn.execute("""
+                SELECT user_id, full_name, email, organization, role, created_at
+                FROM users
+                WHERE LOWER(email) = %s
+            """, (clean,)).fetchone()
+            if not row:
+                return None
+            return UserProfile(
+                user_id=row["user_id"],
+                full_name=row["full_name"],
+                email=row["email"],
+                organization=row["organization"],
+                role=row["role"],
+                created_at=row["created_at"]
+            )
+
     def logout(self, token: str):
         with self._get_conn() as conn:
-            conn.execute("DELETE FROM sessions WHERE token = ?", (token,))
-            conn.commit()
+            conn.execute("DELETE FROM sessions WHERE token = %s", (token,))
 
     def list_all_users(self) -> List[UserProfile]:
         with self._get_conn() as conn:
@@ -550,31 +524,33 @@ class SqliteAuthStore:
         """Purges test accounts created during automated unit tests to prevent database bloat."""
         with self._get_conn() as conn:
             conn.execute("DELETE FROM users WHERE email LIKE 'persist_%' OR email LIKE 'ciso_%'")
-            conn.commit()
 
 
-# Singleton persistent store pointing to data/risklens_users.db
-_auth_store = SqliteAuthStore()
+# Alias for backward compatibility
+SqliteAuthStore = PostgresAuthStore
+
+# Singleton persistent store pointing to PostgreSQL
+_auth_store = PostgresAuthStore()
 
 
 # --- Endpoints ---
 
 @auth_router.post("/signup", response_model=AuthResponse)
 def sign_up(req: UserSignUpRequest):
-    """Registers a new enterprise user and issues a session token, persisting credentials to SQLite."""
+    """Registers a new enterprise user and issues a session token, persisting credentials to PostgreSQL."""
     profile = _auth_store.register_user(req)
     token = _auth_store.create_session(profile.email)
 
     return AuthResponse(
         token=token,
         user=profile,
-        message="Enterprise account created successfully. Credentials securely stored in database."
+        message="Enterprise account created successfully. Credentials securely stored in PostgreSQL database."
     )
 
 
 @auth_router.post("/signin", response_model=AuthResponse)
 def sign_in(req: UserSignInRequest):
-    """Authenticates corporate user credentials against SQLite vault and returns session token."""
+    """Authenticates corporate user credentials against PostgreSQL vault and returns session token."""
     token, profile = _auth_store.authenticate_user(req.email, req.password)
     return AuthResponse(
         token=token,
@@ -609,7 +585,7 @@ def forgot_password(req: ForgotPasswordRequest):
 
 @auth_router.post("/reset-password")
 def reset_password(req: ResetPasswordRequest):
-    """Resets user password in SQLite database using valid verification token."""
+    """Resets user password in PostgreSQL database using valid verification token."""
     _auth_store.reset_password(req.email, req.reset_token, req.new_password)
     return {
         "email": req.email,
@@ -619,7 +595,7 @@ def reset_password(req: ResetPasswordRequest):
 
 @auth_router.post("/change-password")
 def change_password(req: ChangePasswordRequest, authorization: Optional[str] = Header(None)):
-    """Changes password for the currently authenticated user in SQLite vault."""
+    """Changes password for the currently authenticated user in PostgreSQL vault."""
     if not authorization:
         raise HTTPException(status_code=401, detail="Authentication token required.")
     token = authorization.replace("Bearer ", "").strip()
@@ -633,7 +609,7 @@ def change_password(req: ChangePasswordRequest, authorization: Optional[str] = H
 
 @auth_router.get("/me", response_model=UserProfile)
 def get_current_user(authorization: Optional[str] = Header(None)):
-    """Returns currently authenticated user profile verified against active sessions in SQLite."""
+    """Returns currently authenticated user profile verified against active sessions in PostgreSQL."""
     if not authorization:
         raise HTTPException(status_code=401, detail="Authentication token required.")
 
@@ -647,7 +623,7 @@ def get_current_user(authorization: Optional[str] = Header(None)):
 
 @auth_router.post("/logout")
 def logout(authorization: Optional[str] = Header(None)):
-    """Invalidates active session token in SQLite."""
+    """Invalidates active session token in PostgreSQL."""
     if authorization:
         token = authorization.replace("Bearer ", "").strip()
         _auth_store.logout(token)

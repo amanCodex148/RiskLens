@@ -260,7 +260,7 @@ class AiComplianceAssistant:
             "How do we prioritize security controls to eliminate statutory penalty risk?"
         ]
 
-        # 6. Save to SQLite Chat Memory Vault if session provided
+        # 6. Save to PostgreSQL Chat Memory Vault if session provided
         if session_id:
             try:
                 mem_store = get_memory_store()

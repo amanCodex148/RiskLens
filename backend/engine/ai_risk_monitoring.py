@@ -256,7 +256,7 @@ class AiRiskMonitoringEngine:
             "Perform root cause analysis on our top risk"
         ]
 
-        # Save to SQLite Chat Memory Vault if session active
+        # Save to PostgreSQL Chat Memory Vault if session active
         if session_id:
             try:
                 mem_store = get_memory_store()

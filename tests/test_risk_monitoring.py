@@ -10,7 +10,7 @@ Validates:
 4. 5x5 Matrix coordinate shifts and Priority Tier transitions (P0, P1, P2).
 5. Immutable Continuous Monitoring Audit Trail.
 6. REST API Endpoints: POST & GET /api/assistant/risk-monitoring/reassess and /status.
-7. ProjectKnowledgeAgent natural language query routing & SQLite memory vault persistence.
+7. ProjectKnowledgeAgent natural language query routing & PostgreSQL memory vault persistence.
 """
 
 import unittest
