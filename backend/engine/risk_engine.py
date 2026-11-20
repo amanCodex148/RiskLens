@@ -26,10 +26,12 @@ class FairRiskEngine:
         self.seed = seed
         self.telemetry_service = TelemetryService.get_instance()
         self._cached_baseline_result: Optional[QuantifiedRiskResult] = None
+        self._cached_baseline_version: Optional[int] = None
 
     def invalidate_cache(self):
         """Invalidates memoized baseline simulations."""
         self._cached_baseline_result = None
+        self._cached_baseline_version = None
 
     def _sample_pert(
         self,
@@ -259,8 +261,9 @@ class FairRiskEngine:
         Uses isolated, thread-safe Generator to guarantee determinism without global state mutation.
         Returns sub-millisecond memoized result for unparameterized baseline queries.
         """
+        current_version = self.telemetry_service.get_version()
         is_baseline = (not initiative_boosts) and (not custom_overrides)
-        if is_baseline and self._cached_baseline_result is not None:
+        if is_baseline and self._cached_baseline_result is not None and self._cached_baseline_version == current_version:
             return self._cached_baseline_result
 
         rng = np.random.default_rng(self.seed)
@@ -402,5 +405,6 @@ class FairRiskEngine:
 
         if is_baseline:
             self._cached_baseline_result = result
+            self._cached_baseline_version = current_version
 
         return result

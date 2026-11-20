@@ -25,14 +25,24 @@ class TestAiKnowledgeAgent(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.client = TestClient(app)
-        cls.risk_engine = FairRiskEngine(iterations=1000)
-        cls.optimizer = InvestmentOptimizer(risk_engine=cls.risk_engine)
         cls.telemetry = TelemetryService.get_instance()
+        cls.telemetry.reset_to_default()
+        cls.risk_engine = FairRiskEngine(iterations=1000)
+        cls.risk_engine.invalidate_cache()
+        cls.optimizer = InvestmentOptimizer(risk_engine=cls.risk_engine)
         cls.agent = ProjectKnowledgeAgent(
             risk_engine=cls.risk_engine,
             optimizer=cls.optimizer,
             telemetry_service=cls.telemetry
         )
+
+    @classmethod
+    def tearDownClass(cls):
+        try:
+            cls.telemetry.reset_to_default()
+            cls.risk_engine.invalidate_cache()
+        except Exception:
+            pass
 
     def test_catalog_integrity(self):
         """Verifies that all 7 primary UI areas are cataloged with components."""

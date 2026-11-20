@@ -16,12 +16,10 @@ ENV PYTHONUNBUFFERED=1 \
     WORKERS=2 \
     RISKLENS_ENV=production \
     RISKLENS_DATA_DIR=/app/data \
-    DATABASE_URL=postgresql://risklens:risklens_password@postgres:5432/risklens \
     POSTGRES_HOST=postgres \
     POSTGRES_PORT=5432 \
     POSTGRES_DB=risklens \
-    POSTGRES_USER=risklens \
-    POSTGRES_PASSWORD=risklens_password
+    POSTGRES_USER=risklens
 
 # Set container working directory
 WORKDIR /app

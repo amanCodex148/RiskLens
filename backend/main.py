@@ -6,8 +6,11 @@ reverse-proxy support, structured logging, and robust health probes.
 """
 
 import os
+import time
 import asyncio
 import logging
+import threading
+from collections import defaultdict
 from datetime import datetime, timezone
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
@@ -98,7 +101,7 @@ app = FastAPI(
 if _HAS_PROXY_HEADERS:
     app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
-# 2. Security Headers Middleware (OWASP Secure Headers)
+# 2. Security Headers Middleware (OWASP Secure Headers & Regulatory Compliance)
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
@@ -106,7 +109,63 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
+
+    # Enforce Strict-Transport-Security (HSTS) for HTTPS and production environments (RBI CSCRF / SEBI)
+    proto = request.headers.get("x-forwarded-proto", "").lower()
+    is_https = (request.url.scheme == "https") or (proto == "https")
+    is_prod = os.environ.get("RISKLENS_ENV", "").lower() == "production"
+    if is_https or is_prod:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+
+    # Enterprise Content Security Policy (CSP) allowing self, vendored libraries & Chart.js/Tailwind
+    csp = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data: blob:; "
+        "connect-src 'self'; "
+        "font-src 'self' data:; "
+        "frame-ancestors 'self';"
+    )
+    response.headers["Content-Security-Policy"] = csp
     return response
+
+
+# 3. Rate-Limiting Middleware for Compute-Intensive Endpoints
+_rate_limit_lock = threading.Lock()
+_ip_request_timestamps = defaultdict(list)
+_RATE_LIMIT_WINDOW = 60.0  # 60-second sliding window
+_RATE_LIMIT_MAX_HEAVY = 120  # Max 120 calls/min per client IP on compute-intensive operations
+_HEAVY_ENDPOINTS = {
+    "/api/optimize",
+    "/api/scenarios/simulate",
+    "/api/assistant/document-intelligence/upload",
+    "/api/assistant/nlp/retrain",
+    "/api/data/import"
+}
+
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    rate_limit_on = os.environ.get("RATE_LIMIT_ENABLED", "true").lower() in ("true", "1", "yes")
+    if rate_limit_on and request.url.path in _HEAVY_ENDPOINTS:
+        client_ip = request.client.host if request.client else "unknown"
+        now = time.time()
+        with _rate_limit_lock:
+            ts_list = _ip_request_timestamps[client_ip]
+            _ip_request_timestamps[client_ip] = [t for t in ts_list if now - t < _RATE_LIMIT_WINDOW]
+            if len(_ip_request_timestamps[client_ip]) >= _RATE_LIMIT_MAX_HEAVY:
+                return JSONResponse(
+                    status_code=429,
+                    content={"detail": "Too many requests to computationally intensive endpoints. Please retry after a moment."}
+                )
+            _ip_request_timestamps[client_ip].append(now)
+            if len(_ip_request_timestamps) > 5000:
+                expired = [ip for ip, times in _ip_request_timestamps.items() if not times or now - times[-1] >= _RATE_LIMIT_WINDOW]
+                for ip in expired:
+                    _ip_request_timestamps.pop(ip, None)
+
+    return await call_next(request)
 
 # 3. Enable GZip compression for payloads > 500 bytes
 app.add_middleware(GZipMiddleware, minimum_size=500)

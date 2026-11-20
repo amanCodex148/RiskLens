@@ -22,8 +22,21 @@ class TestDynamicVaR(unittest.TestCase):
         self.headers = {"Authorization": f"Bearer {self.token}"}
 
     def tearDown(self):
+        try:
+            self.client.post("/api/data/reset", headers=getattr(self, "headers", None))
+        except Exception:
+            pass
         self.telemetry.reset_to_default()
         self.engine.invalidate_cache()
+
+    @classmethod
+    def tearDownClass(cls):
+        try:
+            client = TestClient(app)
+            client.post("/api/data/reset")
+        except Exception:
+            pass
+        TelemetryService.get_instance().reset_to_default()
 
     def test_var_percentiles_order_and_presence(self):
         """Verify that 90%, 95%, and 99% VaR are calculated and properly ordered."""

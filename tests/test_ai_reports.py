@@ -27,9 +27,11 @@ class TestAiRiskReports(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.client = TestClient(app)
-        cls.risk_engine = FairRiskEngine(iterations=1000)
-        cls.optimizer = InvestmentOptimizer(risk_engine=cls.risk_engine)
         cls.telemetry = TelemetryService.get_instance()
+        cls.telemetry.reset_to_default()
+        cls.risk_engine = FairRiskEngine(iterations=1000)
+        cls.risk_engine.invalidate_cache()
+        cls.optimizer = InvestmentOptimizer(risk_engine=cls.risk_engine)
         cls.report_engine = AiRiskReportEngine(
             telemetry_service=cls.telemetry,
             risk_engine=cls.risk_engine,
@@ -41,6 +43,14 @@ class TestAiRiskReports(unittest.TestCase):
             telemetry_service=cls.telemetry,
             report_engine=cls.report_engine
         )
+
+    @classmethod
+    def tearDownClass(cls):
+        try:
+            cls.telemetry.reset_to_default()
+            cls.risk_engine.invalidate_cache()
+        except Exception:
+            pass
 
     def test_executive_summary_report_generation(self):
         """Verifies Executive Summary Report contains boardroom KPIs, primary vs secondary loss, and evidence/assumptions."""

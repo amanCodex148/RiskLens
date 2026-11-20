@@ -22,16 +22,25 @@ class ComplianceFrameworkEngine:
         self.telemetry_service = TelemetryService.get_instance()
         self._cached_scores: Optional[List[FrameworkScore]] = None
         self._cached_report: Optional[Dict[str, Any]] = None
+        self._cached_version: Optional[int] = None
 
     def invalidate_cache(self):
         """Clears cached scores upon telemetry refresh."""
         self._cached_scores = None
         self._cached_report = None
+        self._cached_version = None
+
+    def _check_version(self):
+        current_version = self.telemetry_service.get_version()
+        if self._cached_version != current_version:
+            self.invalidate_cache()
+            self._cached_version = current_version
 
     def get_all_framework_scores(self) -> List[FrameworkScore]:
         """
         Calculates compliance percentage and category scores across all 5 frameworks.
         """
+        self._check_version()
         if self._cached_scores is not None:
             return self._cached_scores
 
@@ -178,6 +187,7 @@ class ComplianceFrameworkEngine:
         Produces an executive summary report correlating technical gaps to monetary exposure,
         dynamically synthesized from active asset telemetry, vulnerabilities, and controls.
         """
+        self._check_version()
         if self._cached_report is not None:
             return self._cached_report
 

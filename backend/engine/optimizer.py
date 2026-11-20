@@ -32,6 +32,7 @@ class InvestmentOptimizer:
         self._cached_frontier_max_budget: Optional[float] = None
         self._cached_frontier_steps: Optional[int] = None
         self._cached_diminishing_threshold: Optional[float] = None
+        self._cached_version: Optional[int] = None
 
     def invalidate_cache(self):
         """Clears cached evaluations if telemetry or assets change."""
@@ -41,8 +42,16 @@ class InvestmentOptimizer:
         self._cached_frontier_max_budget = None
         self._cached_frontier_steps = None
         self._cached_diminishing_threshold = None
+        self._cached_version = None
+
+    def _check_version(self):
+        current_version = self.telemetry_service.get_version()
+        if self._cached_version != current_version:
+            self.invalidate_cache()
+            self._cached_version = current_version
 
     def _get_baseline_eal(self) -> float:
+        self._check_version()
         if self._cached_baseline_eal is None:
             base_res = self.risk_engine.run_enterprise_simulation()
             self._cached_baseline_eal = base_res.expected_annual_loss_inr
@@ -54,6 +63,7 @@ class InvestmentOptimizer:
         for every candidate security initiative against baseline enterprise risk.
         Cached in-memory to provide sub-millisecond slider response times.
         """
+        self._check_version()
         if self._cached_evaluated_initiatives is not None:
             return self._cached_evaluated_initiatives
 
@@ -158,6 +168,7 @@ class InvestmentOptimizer:
         Generates Pareto-optimal 'Investment vs. Risk Reduction' Efficient Frontier curve.
         Cached in memory to eliminate redundant computation, respecting budget ceilings.
         """
+        self._check_version()
         if (
             self._cached_frontier is not None
             and self._cached_frontier_max_budget == max_budget_inr

@@ -764,6 +764,7 @@ class TelemetryService:
     def __init__(self):
         self._lock = threading.RLock()
         self._last_mtime: float = 0.0
+        self._version: int = 1
         self.metadata: Dict[str, Any] = self._load_initial_metadata()
         self.assets: List[Asset] = self._load_initial_assets()
         self.initiatives: List[SecurityInitiative] = get_default_security_initiatives()
@@ -794,6 +795,7 @@ class TelemetryService:
                         raw = json.load(f)
                     self.assets = [Asset.model_validate(a) for a in raw]
                     self._last_mtime = mtime
+                    self._version += 1
                 if os.path.exists(CUSTOM_METADATA_FILE):
                     try:
                         with open(CUSTOM_METADATA_FILE, "r", encoding="utf-8") as mf:
@@ -804,6 +806,7 @@ class TelemetryService:
                 self.assets = list(get_default_enterprise_assets())
                 self.metadata = dict(DEFAULT_METADATA)
                 self._last_mtime = 0.0
+                self._version += 1
         except Exception:
             pass
 
@@ -861,6 +864,7 @@ class TelemetryService:
         snapshot = list(assets)
         with self._lock:
             self.assets = snapshot
+            self._version += 1
             if metadata:
                 self.metadata = dict(metadata)
                 self.metadata["asset_count"] = len(snapshot)
@@ -933,8 +937,15 @@ class TelemetryService:
                 pass
         with self._lock:
             self._last_mtime = 0.0
+            self._version += 1
             self.assets = list(get_default_enterprise_assets())
             self.metadata = dict(DEFAULT_METADATA)
+
+    def get_version(self) -> int:
+        """Returns internal telemetry state version, automatically synchronizing if disk files changed."""
+        with self._lock:
+            self._sync_custom_file_if_modified()
+            return self._version
 
     def export_assets_dict(self) -> List[Dict[str, Any]]:
         with self._lock:

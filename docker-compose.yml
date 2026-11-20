@@ -8,7 +8,8 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:-risklens}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-risklens_password}
     ports:
-      - "5432:5432"
+      # Bound strictly to localhost to prevent exposing PostgreSQL to external public interfaces
+      - "127.0.0.1:5432:5432"
     volumes:
       # Named volume for persistent enterprise PostgreSQL database
       - risklens_postgres_data:/var/lib/postgresql/data
@@ -17,6 +18,13 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+        reservations:
+          memory: 256M
     logging:
       driver: "json-file"
       options:
@@ -38,9 +46,13 @@ services:
     environment:
       - PORT=8000
       - HOST=0.0.0.0
-      - WORKERS=2
-      - RISKLENS_ENV=production
-      - RISKLENS_REQUIRE_AUTH=false  # Set to true for strict production enterprise authentication
+      - WORKERS=${WORKERS:-2}
+      - RISKLENS_ENV=${RISKLENS_ENV:-production}
+      - RISKLENS_REQUIRE_AUTH=${RISKLENS_REQUIRE_AUTH:-false}  # Set to true via .env for strict production enterprise authentication
+      - RISKLENS_DEMO_MODE=${RISKLENS_DEMO_MODE:-false}
+      - RISKLENS_SEED_DEMO_USERS=${RISKLENS_SEED_DEMO_USERS:-false}
+      - RATE_LIMIT_ENABLED=${RATE_LIMIT_ENABLED:-true}
+      - CORS_ORIGINS=${CORS_ORIGINS:-}
       - DATABASE_URL=postgresql://${POSTGRES_USER:-risklens}:${POSTGRES_PASSWORD:-risklens_password}@postgres:5432/${POSTGRES_DB:-risklens}
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
@@ -51,6 +63,13 @@ services:
     volumes:
       # Named volume for uploaded telemetry datasets and exported reports
       - risklens_data:/app/data
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+        reservations:
+          memory: 512M
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/api/health"]
       interval: 30s
